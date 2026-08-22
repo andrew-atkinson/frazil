@@ -226,25 +226,13 @@ class GenSIMTrainModule(pl.LightningModule):
         else:
             labels = get_empty_labels(batch["states"], self._LABELS_DIMS)
         
-        # Separate parameters for weight decay
-        decay_params, no_decay_params = split_wd_params(self.network)
-        scale_params = list(self.log_scale_model.parameters())
-
-        # Optimizers
-        optimizer_net = torch.optim.AdamW(
-            [
-                {"params": decay_params, "weight_decay": self.weight_decay},
-                {"params": no_decay_params, "weight_decay": 0.0},
-            ],
-            lr=self.lr,
-            betas=(0.9, 0.95),
-        )
-        optimizer_scale = torch.optim.AdamW(
-            scale_params,
-            lr=self.lr,
-            weight_decay=0.0,
-            betas=(0.9, 0.95),
-        )
+        # Persistent optimizers and scheduler from configure_optimizers. Under
+        # manual optimization (automatic_optimization=False) these must be
+        # retrieved via self.optimizers()/self.lr_schedulers() so that Adam's
+        # moment estimates accumulate across steps and the warmup+cosine LR
+        # schedule stays live. (They must not be rebuilt every step.)
+        optimizer_net, optimizer_scale = self.optimizers()
+        scheduler_net = self.lr_schedulers()
 
         # Zero gradients
         optimizer_net.zero_grad()
@@ -252,32 +240,24 @@ class GenSIMTrainModule(pl.LightningModule):
 
         # Forward pass
         outputs = self.estimate_loss(batch, resolution, labels, prefix="train")
-        
+
         # Backward pass
         self.manual_backward(outputs["loss"])
-        
+
         # Gradient clipping
         self.clip_gradients(
             optimizer_net, gradient_clip_val=1.,
             gradient_clip_algorithm="norm"
         )
-        
+
         # Optimizer steps
         optimizer_net.step()
         if self.optimize_scale:
             optimizer_scale.step()
-        
-        # Scheduler step
-        from cosine_annealing_warmup import CosineAnnealingWarmupRestarts
-        scheduler_net = CosineAnnealingWarmupRestarts(
-            optimizer_net,
-            first_cycle_steps=self.total_steps,
-            warmup_steps=self.lr_warmup,
-            max_lr=self.lr,
-            min_lr=self.lr * 0.1,
-        )
+
+        # Scheduler step (per-step interval, see configure_optimizers)
         scheduler_net.step()
-        
+
         return outputs
 
     def validation_step(

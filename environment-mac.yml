@@ -1,0 +1,44 @@
+# Conda environment for running GenSIM inference on macOS (Apple Silicon / Intel).
+#
+# Differences from environment.yml (which targets Linux + NVIDIA CUDA):
+#   * The CUDA-specific PyTorch wheel index (cu126) is removed, so pip installs
+#     the default PyTorch build. On Apple Silicon this ships with the MPS
+#     (Metal) backend; on Intel Macs it is a CPU build.
+#   * flash-attn is intentionally absent (NVIDIA-only). GenSIM automatically
+#     falls back to torch.scaled_dot_product_attention on these machines.
+#
+# Create with:  conda env create -f environment-mac.yml
+name: gensim
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - tqdm
+  - cartopy
+  - matplotlib
+  - numpy
+  - scipy
+  - zarr
+  - netcdf4
+  - xarray
+  - dask
+  - distributed
+  - ipykernel
+  - ipywidgets
+  - gcsfs
+  - pip:
+      - git+https://github.com/katsura-jp/pytorch-cosine-annealing-with-warmup
+      - cmocean
+      - einops
+      - rich
+      - torch
+      - torchvision
+      - torchaudio
+      - lightning
+      - hydra-core
+      - hydra-joblib-launcher
+      - hydra-submitit-launcher
+      - hydra-optuna-sweeper
+      - tensorstore
+      - wandb
