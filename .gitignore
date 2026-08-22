@@ -175,3 +175,23 @@ data/wandb
 outputs
 .continue*
 *.pt*
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/
+
+# GenSIM drift-rollout experiment outputs (large, regenerable)
+data/drift_run/
+data/drift_smoke/
+
+# Monthly preprocessing output (regenerable)
+data/train_data/monthly_datacube/
+
+# Monthly training zarr stores (regenerable)
+data/train_data/train_monthly.zarr/
+data/train_data/validation_monthly.zarr/
+
+# 
+data/
+!data/train_data/.gitkeep
+!data/mdoels/.gitkeep
+!data/auxilliary/.gitkeep
