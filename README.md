@@ -60,6 +60,62 @@ Verify installation:
 python -c "import gensim; print(gensim.__version__)"
 ```
 
+## Apple Silicon (macOS) & monthly retraining
+
+This fork adds support for running/training on Apple Silicon (MPS) and a
+pipeline for retraining GenSIM on **monthly** neXtSIM-OPA + ERA5 data.
+
+**Environment.** Use `environment-mac.yml` (drops the CUDA-only PyTorch wheel and
+flash-attn; MPS build works out of the box):
+
+```bash
+conda env create -f environment-mac.yml && conda activate gensim && pip install -e .
+```
+
+`inference_demo.ipynb` auto-detects the device (CUDA → MPS → CPU) and casts to
+float32 (MPS has no float64), so it runs unchanged on a Mac.
+
+**Monthly retraining pipeline** (scripts in `experiments/`, downloaders in
+`../seaIceMonthlyDownload/`):
+
+```bash
+# 1. download targets (neXtSIM-OPA, 1995–2018) and forcing (ERA5 monthly, needs ~/.cdsapirc)
+python ../seaIceMonthlyDownload/download.py        # -> data/train_data/nextsim_opa_monthly/
+python ../seaIceMonthlyDownload/era5-download.py   # -> data/train_data/*.nc
+# 2. regrid + rotate onto the GenSIM grid, derive humidity/degree-days
+python experiments/preprocess_monthly.py           # -> data/train_data/monthly_datacube/
+# 3. normalization stats -> config_train_monthly.yaml
+python experiments/estimate_normalization_monthly.py
+# 4. pack masked train/validation zarr (delta_t=1 = one-month step)
+python experiments/build_zarr_monthly.py
+# 5. train (config_train_monthly_mac.yaml = ~3.8M-param model tuned for a laptop GPU)
+python train.py --config-name config_train_monthly_mac
+```
+
+`experiments/` also has standalone checks: `smoke_train_monthly.py`,
+`minimal_train_monthly.py`, `train_watch_monthly.py` (loss curve),
+`ab_optimizer_monthly.py`, and `drift_rollout.py` (free-running drift diagnostic).
+
+**Bug fixes applied to core files** (needed for any real training run):
+- `train_module.py` – `training_step` now uses the persistent optimizer/scheduler
+  from `configure_optimizers` (the previous version rebuilt AdamW every step, so
+  Adam momentum reset and the LR schedule never ran). Also adds `ema_update_every`.
+- `augmentation.py` – `extract_patches` clamps patch starts to the padded bounds
+  (fixes a boundary size-mismatch crash).
+- `utils.py` – `neglogcdf` uses `ndtr` instead of `log_ndtr` (no MPS kernel for
+  the latter → silent CPU fallback).
+
+**Stop/resume.** Lightning writes `data/models/<exp_name>/last.ckpt`; resume with:
+
+```bash
+python train.py --config-name config_train_monthly_mac ckpt_path=data/models/monthly/last.ckpt
+```
+
+> Note: the monthly setup is a coarse, from-scratch experiment. A monthly-mean
+> step is not the 12-hour dynamics GenSIM was trained for, and the degree-day
+> features change meaning at that cadence — treat results as exploratory. Real
+> training belongs on CUDA (the base config targets 8 GPUs).
+
 ## Data Preprocessing
 
 The `notebooks/` folder contains Jupyter notebooks that walk through the full data preparation pipeline required for training and inference:

@@ -39,6 +39,7 @@ class GenSIMTrainModule(pl.LightningModule):
             total_steps: int = 250000,
             weight_decay: float = 1E-3,
             ema_rate: float = 0.999,
+            ema_update_every: int = 1,
             overlap_size: Tuple[int, int] = (8, 8),
             train_with_overlap: bool = True,
             censoring: bool = True,
@@ -81,6 +82,7 @@ class GenSIMTrainModule(pl.LightningModule):
 
         # Training parameters
         self.ema_rate = ema_rate
+        self.ema_update_every = ema_update_every
         self.lr = lr
         self.lr_warmup = lr_warmup
         self.total_steps = total_steps
@@ -206,7 +208,11 @@ class GenSIMTrainModule(pl.LightningModule):
         }
 
     def on_train_batch_end(self, outputs, batch, batch_idx):
-        self.ema_model.update_parameters(self.network)
+        # EMA lives on CPU, so each update forces an MPS->CPU sync of all params.
+        # ponytail: update every N steps to amortize that (raise ema_rate to keep
+        # the effective window). Default 1 = unchanged.
+        if (batch_idx + 1) % self.ema_update_every == 0:
+            self.ema_model.update_parameters(self.network)
 
     def on_train_end(self) -> None:
         torch.optim.swa_utils.update_bn(

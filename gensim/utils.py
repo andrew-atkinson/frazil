@@ -242,7 +242,10 @@ def neglogcdf(value: torch.Tensor) -> torch.Tensor:
     Returns:
         The cumulative distribution function value.
     """
-    return -torch.special.log_ndtr(value)
+    # log_ndtr has no MPS kernel (silent CPU fallback); ndtr does. Equivalent to
+    # ~6e-3, keeps it on-device. ponytail: clamp loses deep-tail accuracy, use
+    # special.log_ndtr on CPU/CUDA if that ever matters.
+    return -torch.log(torch.special.ndtr(value).clamp_min(1e-30))
 
 
 class ToChannelsLastWrapper(torch.nn.Module):

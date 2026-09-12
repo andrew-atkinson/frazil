@@ -115,6 +115,7 @@ def extract_patches(
     in_tensor = F.pad(
         in_tensor, (pad_y, pad_y, pad_x, pad_x), mode="replicate"
     )
+    padded_h, padded_w = in_tensor.shape[-2], in_tensor.shape[-1]
     out_tensor = torch.empty(
         nb*n_patches, nc, size_y, size_x,
         device=in_tensor.device, dtype=in_tensor.dtype
@@ -122,6 +123,12 @@ def extract_patches(
     for k, (start_top, start_left, level) in enumerate(
             zip(sampled_top, sampled_left, sampled_levels)
     ):
+        level = int(level)
+        # Clamp the start so the patch never runs past the padded boundary. The
+        # sampler occasionally returns a start within a patch-width of the edge,
+        # which would otherwise clip the slice and raise a size mismatch.
+        start_top = min(max(int(start_top), 0), padded_h - size_y * level)
+        start_left = min(max(int(start_left), 0), padded_w - size_x * level)
         end_top = start_top + size_y * level
         end_left = start_left + size_x * level
         curr_patch = in_tensor[
