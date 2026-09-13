@@ -195,3 +195,5 @@ data/
 !data/train_data/.gitkeep
 !data/mdoels/.gitkeep
 !data/auxilliary/.gitkeep
+
+plots/
