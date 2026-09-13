@@ -81,11 +81,17 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
         main_logger.info("Watch gradients and parameters of model")
         training_logger.watch(model, log="all", log_freq=100)
 
+    # Always add a CSVLogger -> data/models/<exp_name>/metrics.csv for easy
+    # offline plotting (pandas), alongside whatever cfg.logger is.
+    from lightning.pytorch.loggers import CSVLogger
+    csv_logger = CSVLogger("data/models", name=cfg.exp_name, version="")
+    loggers = [lg for lg in (training_logger, csv_logger) if lg is not None]
+
     main_logger.info("Instantiating trainer")
     trainer: pl.Trainer = instantiate(
         cfg.trainer,
         callbacks=callbacks,
-        logger=training_logger
+        logger=loggers
     )
 
     main_logger.info("Starting training")
