@@ -26,8 +26,18 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
     from hydra.utils import instantiate
     import torch
     import lightning.pytorch as pl
+
+    # PyTorch 2.6 defaults torch.load to weights_only=True, which rejects the
+    # OmegaConf config Lightning stores in the checkpoint. Our own checkpoints
+    # are trusted, so force full loads. ponytail: global override, fine for a
+    # training entrypoint that only loads its own checkpoints.
+    _orig_load = torch.load
+    torch.load = lambda *a, **k: _orig_load(*a, **{**k, "weights_only": False})
     from lightning.pytorch.loggers import WandbLogger
-    from wandb.sdk.service.service import ServiceStartTimeoutError
+    try:
+        from wandb.sdk.service.service import ServiceStartTimeoutError
+    except ImportError:  # moved/removed across wandb versions
+        ServiceStartTimeoutError = Exception
 
     if cfg.get("seed"):
         pl.seed_everything(cfg.seed, workers=True)

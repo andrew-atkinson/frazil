@@ -7,7 +7,7 @@ hydra:
 trainer:
   _target_: lightning.pytorch.Trainer
   enable_checkpointing: true
-  accelerator: cuda
+  accelerator: mps
   max_epochs: -1
   max_steps: 1000000
   benchmark: true
@@ -15,10 +15,10 @@ trainer:
   val_check_interval: 2000
   check_val_every_n_epoch: null
   default_root_dir: data/models/${exp_name}
-  devices: ${devices}
-  num_nodes: ${nodes}
-  precision: bf16-mixed
-  strategy: ddp
+  devices: 1
+  num_nodes: 1
+  precision: '32'
+  strategy: auto
 callbacks:
   learning_rate_monitor:
     _target_: lightning.pytorch.callbacks.LearningRateMonitor
@@ -192,7 +192,7 @@ surrogate:
   _target_: gensim.train_module.GenSIMTrainModule
   _recursive_: false
   lr: 0.0005
-  lr_warmup: 5000
+  lr_warmup: 200
   total_steps: 1000000
   weight_decay: 0.001
   ema_rate: 0.9999
