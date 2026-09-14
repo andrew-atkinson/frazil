@@ -1,0 +1,5 @@
+# Copernicus CDS credentials for download/era5.py.
+# Copy this to ~/.cdsapirc (your home dir, NOT the repo) and fill in your token
+# from https://cds.climate.copernicus.eu (Your profile -> Personal Access Token).
+url: https://cds.climate.copernicus.eu/api
+key: <YOUR-PERSONAL-ACCESS-TOKEN>
