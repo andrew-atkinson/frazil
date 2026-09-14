@@ -32,17 +32,20 @@ def step_of(path):
     return int(m.group(1)) if m else -1
 
 
-def pick_checkpoints(ckpt_dir, n):
+def pick_checkpoints(ckpt_dir, interval):
     # distinct steps (ignore -v1/-v2 dupes -> keep the first per step)
     by_step = {}
     for p in glob.glob(f"{ckpt_dir}/step_*.ckpt"):
         by_step.setdefault(step_of(p), p)
     steps = sorted(by_step)
-    if len(steps) <= n:
-        chosen = steps
-    else:  # evenly spaced across the range, always include first + last
-        idx = np.linspace(0, len(steps) - 1, n).round().astype(int)
-        chosen = [steps[i] for i in sorted(set(idx))]
+    if not steps:
+        return []
+    # Snap a fixed step grid (0, interval, 2*interval, ...) to the nearest
+    # available checkpoint, plus the latest. Stable as training grows, so reruns
+    # reuse cached steps and only the new high end gets evaluated.
+    targets = list(range(0, steps[-1] + 1, interval))
+    chosen = sorted({min(steps, key=lambda s: abs(s - t)) for t in targets}
+                    | {steps[-1]})
     return [(s, by_step[s]) for s in chosen]
 
 
@@ -53,21 +56,36 @@ def main(argv=None):
     ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
-    ap.add_argument("--n-ckpts", type=int, default=10)
+    ap.add_argument("--interval", type=int, default=25000,
+                    help="eval a checkpoint near every N steps (stable grid)")
     ap.add_argument("--max-pairs", type=int, default=12)
-    ap.add_argument("--out-csv", default="experiments/skill_vs_step.csv")
-    ap.add_argument("--out-png", default="experiments/skill_vs_step.png")
+    ap.add_argument("--out-csv", default="plots/skill_vs_step.csv")
+    ap.add_argument("--out-png", default="plots/skill_vs_step.png")
     args = ap.parse_args(argv)
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     cube = E.load_val_cube(args.datacube, 2015)
     aux = xr.open_dataset(args.aux)
-    ckpts = pick_checkpoints(args.ckpt_dir, args.n_ckpts)
+    ckpts = pick_checkpoints(args.ckpt_dir, args.interval)
     print(f"[sweep] {len(ckpts)} checkpoints, {args.max_pairs} pairs each, "
           f"steps {ckpts[0][0]}..{ckpts[-1][0]}")
 
+    fields = ["step", "mean"] + E.STATES
+    # Reuse previously computed steps so reruns only evaluate new checkpoints.
+    cached = {}
+    if os.path.exists(args.out_csv):
+        with open(args.out_csv) as fh:
+            for r in csv.DictReader(fh):
+                cached[int(r["step"])] = {"step": int(r["step"]),
+                                          **{k: float(r[k]) for k in fields[1:]}}
+        print(f"[cache] {len(cached)} steps loaded from {args.out_csv}")
+
     rows = []
     for step, path in ckpts:
+        if step in cached:
+            rows.append(cached[step])
+            print(f"  step {step:7d}: cached (mean {cached[step]['mean']:+.1%})")
+            continue
         torch.manual_seed(42)
         model = E.load_model(path, args.config, device, args.train_config)
         rmse = E.eval_skill(model, cube, aux, device, args.max_pairs, progress=False)
@@ -78,12 +96,15 @@ def main(argv=None):
         print(f"  step {step:7d}: mean skill {skill['mean']:+.1%}  "
               + "  ".join(f"{v}={skill[v]:+.0%}" for v in E.STATES), flush=True)
 
-    fields = ["step", "mean"] + E.STATES
+    # Keep any cached steps outside the current selection too, so the CSV grows.
+    seen = {r["step"] for r in rows}
+    rows += [r for s, r in cached.items() if s not in seen]
+    rows.sort(key=lambda r: r["step"])
     with open(args.out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()
         w.writerows(rows)
-    print(f"[csv] {args.out_csv}")
+    print(f"[csv] {args.out_csv} ({len(rows)} steps)")
 
     try:
         import matplotlib
