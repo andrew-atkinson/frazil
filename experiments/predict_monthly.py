@@ -33,19 +33,20 @@ DIVERGING = {"siu", "siv"}
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ckpt", default="data/models/monthly/last.ckpt")
+    ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
     ap.add_argument("--config", default="config_forecast_monthly.yaml")
     ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
     ap.add_argument("--target-year", type=int, default=2018)
     ap.add_argument("--target-month", type=int, default=3)
+    ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")
     ap.add_argument("--out-png", default="plots/forecast_maps.png")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    model = E.load_model(args.ckpt, args.config, device, args.train_config)
+    model = E.load_model(args.ckpt or E.default_ckpt(), args.config, device, args.train_config)
 
     cube = xr.open_mfdataset(sorted(glob.glob(f"{args.datacube}/monthly_datacube_*.nc")),
                              combine="by_coords")["datacube"].load()
@@ -61,23 +62,27 @@ def main(argv=None):
 
     aux = xr.open_dataset(args.aux)
     ocean = aux["mask"].values.astype(bool)
-    mesh = torch.as_tensor(
+
+    def rep(x):  # tile (1, ...) along batch to n_ens members
+        return x.repeat(args.n_ens, *([1] * (x.ndim - 1)))
+
+    mesh = rep(torch.as_tensor(
         (aux[["x_coord", "y_coord"]].to_dataarray("c").values / 1000)[None],
-        device=device, dtype=torch.float32)
-    mask = torch.as_tensor(aux["mask"].values[None, None], device=device,
-                           dtype=torch.float32)
-    resolution = torch.full((1, 1), 12.5, device=device, dtype=torch.float32)
+        device=device, dtype=torch.float32))
+    mask = rep(torch.as_tensor(aux["mask"].values[None, None], device=device,
+                               dtype=torch.float32))
+    resolution = torch.full((args.n_ens, 1), 12.5, device=device, dtype=torch.float32)
 
     def arr(t, names):
         return np.nan_to_num(cube.isel(time=t).sel(var_names=names).values)
 
-    states = torch.as_tensor(arr(prev, E.STATES)[None], device=device, dtype=torch.float32)
+    states = rep(torch.as_tensor(arr(prev, E.STATES)[None], device=device, dtype=torch.float32))
     forc = np.stack([arr(prev, E.FORCINGS), arr(ti, E.FORCINGS)])
-    forc = torch.as_tensor(forc[None], device=device, dtype=torch.float32)
-    dd = torch.as_tensor(arr(prev, E.DEGREE)[None], device=device, dtype=torch.float32)
+    forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
+    dd = rep(torch.as_tensor(arr(prev, E.DEGREE)[None], device=device, dtype=torch.float32))
     with torch.no_grad():
         pred = model(states[:, None], forc, resolution=resolution, mesh=mesh,
-                     mask=mask, degree_days=dd)[0].cpu().numpy()  # (6,H,W)
+                     mask=mask, degree_days=dd).mean(0).cpu().numpy()  # ensemble mean (6,H,W)
     assert np.isfinite(pred).all(), "non-finite prediction"
 
     truth = arr(ti, E.STATES)

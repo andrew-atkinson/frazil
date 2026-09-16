@@ -58,22 +58,41 @@ def load_model(ckpt_path, config, device, train_config):
     return model
 
 
+def default_ckpt(ckpt_dir="data/models/monthly"):
+    """The canonical monthly.ckpt if present, else the newest last*.ckpt.
+    (Lightning's -v rotation makes plain last.ckpt an unreliable name, so we
+    consolidate the trained model to monthly.ckpt and prefer that.)"""
+    canonical = f"{ckpt_dir}/monthly.ckpt"
+    if os.path.exists(canonical):
+        return canonical
+    cks = glob.glob(f"{ckpt_dir}/last*.ckpt")
+    if not cks:
+        raise SystemExit(f"no monthly.ckpt or last*.ckpt in {ckpt_dir}")
+    return max(cks, key=os.path.getmtime)
+
+
 def load_val_cube(datacube_dir, val_start_year):
     files = sorted(f for f in glob.glob(f"{datacube_dir}/monthly_datacube_*.nc")
                    if int(f.split("_")[-1].split(".")[0]) >= val_start_year)
     return xr.open_mfdataset(files, combine="by_coords")["datacube"].load()
 
 
-def eval_skill(model, cube, aux, device, max_pairs=0, progress=True):
+def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
     """One-month-ahead RMSE over ocean per state var. Returns {var: (rmse_model,
-    rmse_persistence)}."""
+    rmse_persistence)}. With n_ens>1, GenSIM is a generative ensemble -- draw
+    n_ens members (the batch dim) and use the ensemble MEAN, which cancels
+    per-sample sampling noise."""
     ocean = aux["mask"].values.astype(bool)
-    mesh = torch.as_tensor(
+
+    def rep(x):  # tile a (1, ...) tensor along the batch dim to n_ens
+        return x.repeat(n_ens, *([1] * (x.ndim - 1)))
+
+    mesh = rep(torch.as_tensor(
         (aux[["x_coord", "y_coord"]].to_dataarray("c").values / 1000)[None],
-        device=device, dtype=torch.float32)
-    mask = torch.as_tensor(aux["mask"].values[None, None], device=device,
-                           dtype=torch.float32)
-    resolution = torch.full((1, 1), 12.5, device=device, dtype=torch.float32)
+        device=device, dtype=torch.float32))
+    mask = rep(torch.as_tensor(aux["mask"].values[None, None], device=device,
+                               dtype=torch.float32))
+    resolution = torch.full((n_ens, 1), 12.5, device=device, dtype=torch.float32)
 
     def arr(t, names):
         return np.nan_to_num(cube.isel(time=t).sel(var_names=names).values)
@@ -85,13 +104,13 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True):
     se_pers = {v: 0.0 for v in STATES}
     count = 0
     for t in range(n):
-        states = torch.as_tensor(arr(t, STATES)[None], device=device, dtype=torch.float32)
+        states = rep(torch.as_tensor(arr(t, STATES)[None], device=device, dtype=torch.float32))
         forc = np.stack([arr(t, FORCINGS), arr(t + 1, FORCINGS)])  # (2,4,H,W)
-        forc = torch.as_tensor(forc[None], device=device, dtype=torch.float32)
-        dd = torch.as_tensor(arr(t, DEGREE)[None], device=device, dtype=torch.float32)
+        forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
+        dd = rep(torch.as_tensor(arr(t, DEGREE)[None], device=device, dtype=torch.float32))
         with torch.no_grad():
             pred = model(states[:, None], forc, resolution=resolution, mesh=mesh,
-                         mask=mask, degree_days=dd)[0].cpu().numpy()  # (6,H,W)
+                         mask=mask, degree_days=dd).mean(0).cpu().numpy()  # ensemble mean (6,H,W)
         truth = arr(t + 1, STATES)
         persist = arr(t, STATES)
         for i, v in enumerate(STATES):
@@ -106,22 +125,25 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ckpt", default="data/models/monthly/last-v3.ckpt")
+    ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
     ap.add_argument("--config", default="config_forecast_monthly.yaml")
     ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
     ap.add_argument("--val-start-year", type=int, default=2015)
     ap.add_argument("--max-pairs", type=int, default=0, help="0 = all val pairs")
+    ap.add_argument("--n-ens", type=int, default=1, help="ensemble members (mean)")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    model = load_model(args.ckpt, args.config, device, args.train_config)
+    ckpt = args.ckpt or default_ckpt()
+    print(f"[ckpt] {ckpt}")
+    model = load_model(ckpt, args.config, device, args.train_config)
     cube = load_val_cube(args.datacube, args.val_start_year)
     aux = xr.open_dataset(args.aux)
-    print(f"[data] {cube.sizes['time']} val months")
-    rmse = eval_skill(model, cube, aux, device, args.max_pairs)
+    print(f"[data] {cube.sizes['time']} val months  (n_ens={args.n_ens})")
+    rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens)
 
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
     print(f"  {'var':5s} {'GenSIM':>10s} {'persistence':>12s} {'skill':>8s}")
