@@ -122,6 +122,10 @@ Other `experiments/` helpers: `smoke_train_monthly.py` / `minimal_train_monthly.
 (config + shape checks), `train_watch_monthly.py` (live loss curve), and
 `ab_optimizer_monthly.py` (the optimizer A/B below).
 
+> **Full CLI reference:** every script's flags, defaults, outputs, and the
+> decadal-projection tools (`freerun_monthly.py`, bias-corrected CMIP forcing) are
+> documented in **[docs/CLI.md](docs/CLI.md)**.
+
 **What it produces.** A ~3.8M-param monthly model that, trained on a laptop,
 **beats persistence by ~40–60% on all six sea-ice variables** at one-month-ahead
 lead over 2015–2018 — a working monthly emulator, not a toy. Note the loss (a
