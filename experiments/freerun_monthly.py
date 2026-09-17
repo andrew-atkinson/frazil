@@ -62,6 +62,10 @@ def main(argv=None):
                     help="first-order sampler + fewer substeps (for diagnostics, not art)")
     ap.add_argument("--forcing", choices=["cyclic", "cmip"], default="cyclic")
     ap.add_argument("--out-dir", default="plots/freerun")
+    ap.add_argument("--snapshot-every", type=int, default=12,
+                    help="save the full spatial state every N months (0=off); the "
+                         "final state is always saved. These are what maps are drawn from.")
+    ap.add_argument("--no-map", action="store_true", help="skip the final-state map figure")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
@@ -99,7 +103,20 @@ def main(argv=None):
         dd_f, _ = load_series(args.cmip_datacube, E.DEGREE)
         if len(times_f) < nsteps + 1:
             raise SystemExit(f"cmip forcing has {len(times_f)} months < {nsteps+1} needed")
-        print("[freerun] *** CMIP forcing is BIAS-UNCORRECTED vs ERA5 -- see preprocess_cmip.py ***")
+        # Read the bias-correction stamp preprocess_cmip writes onto the datacube.
+        bc = None
+        try:
+            one = sorted(glob.glob(f"{args.cmip_datacube}/*_datacube_*.nc"))[0]
+            bc = xr.open_dataset(one)["datacube"].attrs.get("bias_corrected")
+        except Exception:
+            pass
+        if bc in (None, ""):
+            print("[freerun] CMIP forcing: bias-correction UNSTAMPED (older preprocess) -- "
+                  "check it was corrected vs ERA5, or re-run preprocess_cmip.py")
+        elif bc == "none":
+            print("[freerun] *** CMIP forcing is RAW / BIAS-UNCORRECTED vs ERA5 ***")
+        else:
+            print(f"[freerun] CMIP forcing bias-corrected vs ERA5 (baseline {bc})")
 
         def forc_pair(k):  # (t, t+1) forcing pair + degree-days at step k
             return forc_f[k], forc_f[k + 1], dd_f[k]
@@ -126,10 +143,17 @@ def main(argv=None):
     state = rep(torch.as_tensor(states_r[t0][None], device=device, dtype=torch.float32))
 
     os.makedirs(args.out_dir, exist_ok=True)
+    snap_dir = os.path.join(args.out_dir, "snapshots")
+    if args.snapshot_every:
+        os.makedirs(snap_dir, exist_ok=True)
+    base_date = pd.Timestamp(f"{args.start}-01")   # forward calendar for naming
+
     rows = []
     d0 = step_diagnostics(states_r[t0], ocean, cell_area)  # step 0 (initial truth)
     d0["year"] = 0.0
     rows.append(d0)
+    sm = states_r[t0]
+    last_date = base_date
     for k in range(nsteps):
         fa, fb, dd = forc_pair(k)
         forc = rep(torch.as_tensor(np.stack([fa, fb])[None], device=device, dtype=torch.float32))
@@ -138,6 +162,7 @@ def main(argv=None):
             state = model(state[:, None], forc, resolution=resolution, mesh=mesh,
                           mask=mask, degree_days=ddt)
         sm = state.mean(0).cpu().numpy()  # ensemble-mean state (6,H,W)
+        last_date = base_date + pd.DateOffset(months=k + 1)
         d = step_diagnostics(sm, ocean, cell_area)
         d["year"] = (k + 1) / 12
         rows.append(d)
@@ -145,7 +170,12 @@ def main(argv=None):
               f"sit={d['mean_sit']:.3f} sic={d['mean_sic']:.3f} "
               f"area={d['ice_area_km2']:.2e} sharp={d['sharpness_sit']:.2e} "
               f"nan={d['n_nonfinite']}", end="\r", flush=True)
-        if d["n_nonfinite"] > 0:
+        last_nonfinite = d["n_nonfinite"] > 0
+        if args.snapshot_every and ((k + 1) % args.snapshot_every == 0
+                                    or k + 1 == nsteps or last_nonfinite):
+            save_state(sm, last_date, os.path.join(
+                snap_dir, f"state_{last_date:%Y%m}.nc"))
+        if last_nonfinite:
             print(f"\n[freerun] non-finite at year {d['year']:.2f} -- stopping"); break
 
     # Truth anchor: real-state diagnostics over the 2015-2018 window (where it exists).
@@ -165,6 +195,40 @@ def main(argv=None):
         w.writerows(rows)
 
     plot(rows, anchor, args, csv_path)
+    if not args.no_map:
+        state_map(sm, ocean, os.path.join(args.out_dir, f"freerun_{args.forcing}_map.png"),
+                  f"GenSIM sea ice {last_date:%Y-%m}  ({args.years}yr free run, {args.forcing})")
+
+
+def save_state(sm, date, path):
+    """Save one ensemble-mean spatial state (6,H,W) as NetCDF for later mapping."""
+    xr.DataArray(sm[None], dims=("time", "var_names", "y", "x"),
+                 coords={"var_names": E.STATES, "time": [np.datetime64(date)]},
+                 name="state").to_dataset().to_netcdf(path)
+
+
+def state_map(sm, ocean, path, title):
+    """Per-variable maps of one spatial state (land masked). No truth needed."""
+    from predict_monthly import CMAP, DIVERGING  # reuse the colormaps
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(2, 3, figsize=(12, 7.5))
+    for ax, i, v in zip(axes.flat, range(len(E.STATES)), E.STATES):
+        field = np.where(ocean, sm[i], np.nan)
+        o = sm[i][ocean]
+        if v in DIVERGING:
+            m = np.nanmax(np.abs(o)); vmin, vmax = -m, m
+        else:
+            vmin, vmax = np.nanpercentile(o, 2), np.nanpercentile(o, 98)
+        im = ax.imshow(field, origin="lower", cmap=CMAP[v], vmin=vmin, vmax=vmax)
+        ax.set_title(f"{v} ({E.UNITS[v]})", fontsize=10)
+        ax.set_xticks([]); ax.set_yticks([])
+        fig.colorbar(im, ax=ax, shrink=0.75)
+    fig.suptitle(title, fontsize=13)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(path, dpi=130)
+    print(f"[map] {path}")
 
 
 def plot(rows, anchor, args, csv_path):
