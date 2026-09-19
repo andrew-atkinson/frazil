@@ -10,6 +10,8 @@ commands run with no arguments at all.
   All the model scripts set `PYTORCH_ENABLE_MPS_FALLBACK=1` and auto-detect the
   device (Apple-Silicon **MPS**, else CPU; CUDA if present).
 - **Run from the repo root** (`seaIce/gensim/`) — default paths are relative to it.
+- **Making figures & animations?** See the dedicated guide **[docs/VISUALS.md](VISUALS.md)**
+  (maps, plots, and the decadal shrinking-ice movie, end to end).
 
 ---
 
@@ -403,8 +405,10 @@ python experiments/freerun_monthly.py --forcing cmip --years 80 --fast --snapsho
 
 **Outputs:** `freerun_<forcing>.csv` (diagnostics), `freerun_<forcing>.png`
 (4-panel diagnostics), `freerun_<forcing>_map.png` (6-variable map of the final
-month), and `snapshots/state_YYYYMM.nc` (full spatial states — what maps/animations
-are built from). With a January start, `--snapshot-every 12` lands on winter
+month), and `snapshots/<model>_<forcing>/state_YYYYMM.nc` (full spatial states —
+what maps/animations are built from, namespaced by checkpoint+forcing so runs
+never overwrite each other; the run prints the exact folder). With a January
+start, `--snapshot-every 12` lands on winter
 maxima; use `--snapshot-every 1` (or `--start 2015-09`) to capture the September
 minimum for a shrinking-ice animation.
 
@@ -556,6 +560,34 @@ seasonal cycle and trend matter more than per-frame noise. The first step of any
 run includes a one-off ~100 s MPS kernel compilation — ignore it in the average.
 Snapshot frequency and forcing source (`cyclic`/`cmip`) do **not** affect step
 cost (both are sub-second I/O).
+
+### Results ledger (`experiments/results_log.py`)
+An append-only JSONL log of experiment results, pinned to the exact code that
+produced them — so runs stop being ephemeral terminal scrollback.
+
+```bash
+python experiments/results_log.py init "start tracking; pushforward added"   # project-start entry
+python experiments/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt --note "pf 20k"
+python experiments/results_log.py show          # one line per entry
+python experiments/results_log.py note "committed abc1234: pushforward proved out"
+```
+
+Each record (one JSON line in `results/experiments.jsonl`) carries: UTC timestamp,
+the command, params (incl. resolved `ckpt` and `seed`), **git state**, and
+**metrics** as per-variable data. **`rollout_monthly`** (skill vs lead),
+**`eval_monthly`** (one-step skill + RMSE), and **`freerun_monthly`** (a drift
+summary: initial/final/min/max of area & sharpness, sharpness retention,
+non-finite count) all log automatically — `--no-log` to skip, `--note` to
+annotate.
+
+**Tying results to code before you commit:** the git block stores the base
+`commit`, a `worktree_sha256` fingerprint of the *exact* uncommitted changes
+(tracked diff + untracked files by content hash), and archives the tracked diff to
+`results/patches/<sha>.patch`. So a result made on a dirty tree is still pinned to
+reproducible code. The fingerprint is deterministic (identical code → identical
+hash). When you later commit, run `results_log.py note "committed <sha>: …"` to
+bookmark the link. Commit `results/experiments.jsonl`; `results/patches/` can be
+git-ignored (reconstructable).
 
 ### Skill and baselines
 `skill = 1 − RMSE_model / RMSE_baseline`, per variable, over ocean cells (>0 beats
