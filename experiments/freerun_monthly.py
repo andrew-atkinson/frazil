@@ -23,6 +23,7 @@ import csv
 import glob
 import os
 import sys
+import time
 
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
@@ -84,11 +85,15 @@ def main(argv=None):
     ocean = aux["mask"].values.astype(bool)
     cell_area = aux["cell_area"].values
 
-    # Real 2015-2018 states+forcing: initial condition, forcing source, truth anchor.
+    # Real 2015-2018 states: initial condition + truth anchor (always needed).
     states_r, times_r = load_series(args.datacube, E.STATES)
-    forc_r, _ = load_series(args.datacube, E.FORCINGS)
-    dd_r, _ = load_series(args.datacube, E.DEGREE)
     n_real = len(times_r)
+    # The cyclic forcing is only used by the cyclic path -- don't load its ~2.4GB
+    # in CMIP mode (that plus the CMIP forcing was thrashing swap).
+    forc_r = dd_r = None
+    if args.forcing == "cyclic":
+        forc_r, _ = load_series(args.datacube, E.FORCINGS)
+        dd_r, _ = load_series(args.datacube, E.DEGREE)
 
     hit = np.where((times_r.year == int(args.start[:4])) &
                    (times_r.month == int(args.start[5:7])))[0]
@@ -99,10 +104,17 @@ def main(argv=None):
 
     # Pick the forcing source. cyclic: repeat the 48 real months. cmip: real trend.
     if args.forcing == "cmip":
-        forc_f, times_f = load_series(args.cmip_datacube, E.FORCINGS)
-        dd_f, _ = load_series(args.cmip_datacube, E.DEGREE)
+        # LAZY: read forcing per-step instead of materializing all ~86 years
+        # (~8.6GB) up front, which swap-thrashes a 16GB laptop.
+        files = sorted(glob.glob(f"{args.cmip_datacube}/*_datacube_*.nc"))
+        if not files:
+            raise SystemExit(f"no datacube files in {args.cmip_datacube}")
+        cds = xr.open_mfdataset(files, combine="by_coords")["datacube"]
+        times_f = pd.DatetimeIndex(cds["time"].values)
         if len(times_f) < nsteps + 1:
             raise SystemExit(f"cmip forcing has {len(times_f)} months < {nsteps+1} needed")
+        fda = cds.sel(var_names=E.FORCINGS).transpose("time", "var_names", "y", "x")
+        dda = cds.sel(var_names=E.DEGREE).transpose("time", "var_names", "y", "x")
         # Read the bias-correction stamp preprocess_cmip writes onto the datacube.
         bc = None
         try:
@@ -118,8 +130,11 @@ def main(argv=None):
         else:
             print(f"[freerun] CMIP forcing bias-corrected vs ERA5 (baseline {bc})")
 
+        def _at(da, k):  # materialize just month k (one small slice)
+            return np.nan_to_num(da.isel(time=k).values).astype(np.float32)
+
         def forc_pair(k):  # (t, t+1) forcing pair + degree-days at step k
-            return forc_f[k], forc_f[k + 1], dd_f[k]
+            return _at(fda, k), _at(fda, k + 1), _at(dda, k)
         month_of = lambda k: times_f[k].month
     else:  # cyclic groundhog decade over the 48 real months
         def forc_pair(k):
@@ -151,10 +166,13 @@ def main(argv=None):
     rows = []
     d0 = step_diagnostics(states_r[t0], ocean, cell_area)  # step 0 (initial truth)
     d0["year"] = 0.0
+    d0["wall_s"] = 0.0
     rows.append(d0)
     sm = states_r[t0]
     last_date = base_date
+    t_start = time.time()
     for k in range(nsteps):
+        t_step = time.time()
         fa, fb, dd = forc_pair(k)
         forc = rep(torch.as_tensor(np.stack([fa, fb])[None], device=device, dtype=torch.float32))
         ddt = rep(torch.as_tensor(dd[None], device=device, dtype=torch.float32))
@@ -165,11 +183,15 @@ def main(argv=None):
         last_date = base_date + pd.DateOffset(months=k + 1)
         d = step_diagnostics(sm, ocean, cell_area)
         d["year"] = (k + 1) / 12
+        d["wall_s"] = time.time() - t_step
         rows.append(d)
+        elapsed = time.time() - t_start
+        rate = elapsed / (k + 1)                       # mean s/step so far
+        eta = rate * (nsteps - k - 1)
         print(f"  yr {d['year']:5.2f}  mon {month_of(k):2d}  "
               f"sit={d['mean_sit']:.3f} sic={d['mean_sic']:.3f} "
-              f"area={d['ice_area_km2']:.2e} sharp={d['sharpness_sit']:.2e} "
-              f"nan={d['n_nonfinite']}", end="\r", flush=True)
+              f"area={d['ice_area_km2']:.2e} nan={d['n_nonfinite']}  "
+              f"{d['wall_s']:.1f}s/step  ETA {eta/60:4.0f}m", end="\r", flush=True)
         last_nonfinite = d["n_nonfinite"] > 0
         if args.snapshot_every and ((k + 1) % args.snapshot_every == 0
                                     or k + 1 == nsteps or last_nonfinite):
@@ -178,6 +200,15 @@ def main(argv=None):
         if last_nonfinite:
             print(f"\n[freerun] non-finite at year {d['year']:.2f} -- stopping"); break
 
+    total = time.time() - t_start
+    done = len(rows) - 1
+    summary = (f"{pd.Timestamp.now():%Y-%m-%d %H:%M}  {args.forcing}  {done} steps  "
+               f"n_ens={args.n_ens} fast={args.fast}  {total/60:.1f} min total  "
+               f"{total/max(done,1):.2f} s/step")
+    print(f"\n[timing] {summary}")
+    with open(os.path.join(args.out_dir, "timing.log"), "a") as fh:
+        fh.write(summary + "\n")
+
     # Truth anchor: real-state diagnostics over the 2015-2018 window (where it exists).
     anchor = []
     for t in range(t0, n_real):
@@ -185,7 +216,7 @@ def main(argv=None):
         da["year"] = (t - t0) / 12
         anchor.append(da)
 
-    fields = ["year", "mean_sit", "mean_sic", "ice_area_km2", "mean_speed",
+    fields = ["year", "wall_s", "mean_sit", "mean_sic", "ice_area_km2", "mean_speed",
               "sharpness_sit", "sharpness_sic", "frac_sic_saturated",
               "frac_sic_zero", "frac_sit_zero", "n_nonfinite"]
     csv_path = os.path.join(args.out_dir, f"freerun_{args.forcing}.csv")
