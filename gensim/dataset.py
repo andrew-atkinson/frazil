@@ -130,7 +130,10 @@ class NeXtSIMDataset(Dataset):
         states = trajectory[:, self.state_idx]
         forcings = trajectory[:, self.forcing_idx] \
             if self.use_forcing else np.zeros_like(states[:, :1])
-        degree_days = trajectory[0, self.degree_days_idx]
+        # Per-frame degree days (was frame 0 only). Needed so a rollout step
+        # beyond the first transition has its own degree-day forcing; the
+        # one-step path just slices frame 0, so behaviour is unchanged there.
+        degree_days = trajectory[:, self.degree_days_idx]
         return states, forcings, degree_days
 
     def __len__(self) -> int:

@@ -1,0 +1,37 @@
+# Pushforward (rollout) fine-tune of the monthly model, for Apple Silicon.
+#
+# Inherits config_train_monthly_mac.yaml and overrides only what pushforward
+# needs. Starts from the trained monthly.ckpt and teaches the model to correct
+# its own free-running drift (see docs/PUSHFORWARD.md).
+#
+# RESUMABLE: re-running the exact same command auto-continues from
+#   data/models/monthly_pf/last.ckpt
+# (optimizer, scheduler, step, RNG and EMA all restored). Stop with Ctrl-C at any
+# time; nothing is lost past the last checkpoint (written every 500 steps and on
+# validation).
+#
+# Run:  python train.py --config-name config_finetune_pushforward_mac
+defaults:
+  - config_train_monthly_mac
+  - _self_
+
+exp_name: monthly_pf
+init_from: data/models/monthly/monthly.ckpt   # weights to seed the fine-tune (first launch only)
+ckpt_path: null                                # leave null; auto-resume finds last.ckpt
+compile: false                                 # pushforward runs the sampler; skip torch.compile on MPS
+
+# A short, gentle fine-tune schedule (not a from-scratch run).
+surrogate:
+  lr: 0.0001
+  lr_warmup: 100
+  total_steps: 20000
+  pushforward: true
+  pushforward_prob: 0.5        # fraction of steps that train from a generated state
+  pushforward_substeps: 8      # sampler steps for the (no_grad) generation -- fewer = faster
+  pushforward_warmup: 200      # plain one-step training for this many steps first
+
+data:
+  n_rollout_steps: 2           # -> 3 frames (t, t+1, t+2); the extra frame feeds pushforward
+
+trainer:
+  max_steps: 20000

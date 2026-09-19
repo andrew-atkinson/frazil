@@ -94,8 +94,27 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
         logger=loggers
     )
 
+    # Resumability. Precedence: an explicit ckpt_path; else auto-resume from this
+    # run's own last.ckpt if it exists (so re-running the SAME command picks up
+    # exactly where it stopped -- optimizer, scheduler, step, RNG and EMA all
+    # restored by Lightning); else, on a fresh fine-tune, initialise weights from
+    # cfg.init_from WITHOUT resuming optimizer/step.
+    import os
+    ckpt_path = cfg.get("ckpt_path")
+    last_ckpt = os.path.join("data/models", cfg.exp_name, "last.ckpt")
+    if ckpt_path is None and os.path.exists(last_ckpt):
+        ckpt_path = last_ckpt
+        main_logger.info(f"Auto-resuming from {last_ckpt}")
+    elif ckpt_path is None and cfg.get("init_from"):
+        sd = torch.load(cfg.init_from, map_location="cpu")["state_dict"]
+        missing, unexpected = model.load_state_dict(sd, strict=False)
+        main_logger.info(
+            f"Initialised weights from {cfg.init_from} "
+            f"(missing {len(missing)}, unexpected {len(unexpected)}); fresh optimizer"
+        )
+
     main_logger.info("Starting training")
-    trainer.fit(model=model, datamodule=data_module, ckpt_path=cfg.ckpt_path)
+    trainer.fit(model=model, datamodule=data_module, ckpt_path=ckpt_path)
     main_logger.info("Training finished")
     wandb.finish()
 

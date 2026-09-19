@@ -16,6 +16,7 @@ from omegaconf import OmegaConf
 
 # Internal modules
 from .embedding import LogScaleModel
+from .sampler import FlowMatchingSampler
 from .utils import (
     remove_overlap, get_empty_labels, generate_noise, get_latent_states,
     masked_average, neglogpdf, neglogcdf, split_wd_params,
@@ -47,6 +48,10 @@ class GenSIMTrainModule(pl.LightningModule):
             epsilon: float = 1E-5,
             patch_generator: Optional[OmegaConf] = None,
             train_augmentation: Optional[OmegaConf] = None,
+            pushforward: bool = False,
+            pushforward_prob: float = 0.5,
+            pushforward_substeps: int = 8,
+            pushforward_warmup: int = 0,
     ):
         super().__init__()
 
@@ -88,6 +93,21 @@ class GenSIMTrainModule(pl.LightningModule):
         self.total_steps = total_steps
         self.weight_decay = weight_decay
         self.optimize_scale = optimize_scale
+
+        # Pushforward (rollout) training: with prob `pushforward_prob` (after
+        # `pushforward_warmup` steps) generate the next state under no_grad and
+        # train the one-step loss FROM that drifted state -> teaches drift
+        # correction without backpropagating through the sampler. Needs the data
+        # to provide >=3 frames (n_rollout_steps>=2). The sampler is stateless
+        # (holds no parameters), so it adds nothing to the checkpoint.
+        self.pushforward = pushforward
+        self.pushforward_prob = pushforward_prob
+        self.pushforward_warmup = pushforward_warmup
+        self.pf_sampler = (
+            FlowMatchingSampler(model=self.network, n_steps=pushforward_substeps,
+                                second_order=False, censoring=censoring)
+            if pushforward else None
+        )
 
         self.patch_generator = instantiate(patch_generator)
         self.train_augmentation = instantiate(train_augmentation)
@@ -219,6 +239,63 @@ class GenSIMTrainModule(pl.LightningModule):
             self.trainer.train_dataloader, self.ema_model
         )
 
+    @staticmethod
+    def _dd_frame(batch, i):
+        """degree_days for frame i, tolerating the legacy 4D (frame-0-only) shape."""
+        dd = batch["degree_days"]
+        return dd[:, i] if dd.dim() == 5 else dd
+
+    def _pair_batch(self, batch, i, states=None):
+        """A 2-frame transition sub-batch (frame i -> i+1) that estimate_loss can
+        consume unchanged. `states` overrides the two frames (for pushforward)."""
+        return {
+            "states": batch["states"][:, i:i + 2] if states is None else states,
+            "forcings": batch["forcings"][:, i:i + 2],
+            "degree_days": self._dd_frame(batch, i),
+            "mesh": batch["mesh"],
+            "mask": batch["mask"],
+        }
+
+    @torch.no_grad()
+    def _generate_next(self, states, forcings, mesh, mask, degree_days,
+                       resolution, labels):
+        """Sample the next state from `states` (current frame) -- mirrors
+        GenSIMForecastModule.forward, on the (already patched) training batch."""
+        self.pf_sampler.model = self.network
+        encoded, latent_mesh, latent_mask = get_latent_states(
+            states, forcings, mesh, mask, degree_days, self.encoder
+        )
+        first_guess = states[:, -1]
+        initial_states = generate_noise(first_guess, mask)
+        latent_bounds = self.decoder.get_latent_bounds(first_guess, mask)
+        dynamics = self.pf_sampler.sample(
+            states=initial_states, encoded=encoded, mesh=latent_mesh,
+            mask=latent_mask, labels=labels, resolution=resolution,
+            latent_bounds=latent_bounds,
+        )
+        return self.decoder(dynamics, first_guess=first_guess, mask=mask)
+
+    def _select_batch(self, batch, resolution, labels):
+        """One-step batch for estimate_loss. With pushforward active, replace the
+        input frame by the model's own generated state so it learns to correct
+        its drift; otherwise the plain frame-0 transition."""
+        n_frames = batch["states"].size(1)
+        use_pf = (
+            self.pushforward and self.pf_sampler is not None and n_frames >= 3
+            and self.global_step >= self.pushforward_warmup
+            and float(torch.rand(1)) < self.pushforward_prob
+        )
+        if not use_pf:
+            return self._pair_batch(batch, 0), False
+        # Generate frame-1' from true frame-0, then train frame-1' -> true frame-2.
+        gen = self._generate_next(
+            batch["states"][:, 0:1], batch["forcings"][:, 0:2],
+            batch["mesh"], batch["mask"], self._dd_frame(batch, 0),
+            resolution, labels,
+        )
+        states = torch.stack([gen, batch["states"][:, 2]], dim=1)  # [1', 2]
+        return self._pair_batch(batch, 1, states=states), True
+
     def training_step(
             self,
             batch: Dict[str, torch.Tensor],
@@ -244,8 +321,13 @@ class GenSIMTrainModule(pl.LightningModule):
         optimizer_net.zero_grad()
         optimizer_scale.zero_grad()
 
-        # Forward pass
-        outputs = self.estimate_loss(batch, resolution, labels, prefix="train")
+        # Pick the training pair: the plain frame-0 transition, or -- with
+        # pushforward -- a step FROM the model's own generated (drifted) state,
+        # so it learns to pull its errors back toward truth.
+        pair, used_pf = self._select_batch(batch, resolution, labels)
+        outputs = self.estimate_loss(pair, resolution, labels, prefix="train")
+        if self.pushforward:
+            self.log("train/pushforward", float(used_pf), prog_bar=False)
 
         # Backward pass
         self.manual_backward(outputs["loss"])
@@ -276,8 +358,10 @@ class GenSIMTrainModule(pl.LightningModule):
             batch, resolution = self.patch_generator(batch, resolution)
         labels = get_empty_labels(batch["states"], self._LABELS_DIMS)
 
+        # Always the plain one-step (frame 0 -> 1); slice to a 2-frame pair so a
+        # >=3-frame rollout batch still validates against truth.
         outputs = self.estimate_loss(
-            batch, resolution, labels, prefix="val"
+            self._pair_batch(batch, 0), resolution, labels, prefix="val"
         )
         return outputs["loss"]
 
