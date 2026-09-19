@@ -85,6 +85,41 @@ python download/cmip.py                          # MPI-ESM1-2-LR ssp245, 1994-21
 > **Caveat:** CMIP is a *scenario*, not a forecast, and its atmosphere is biased
 > vs ERA5. The bias is removed in the next step, not here.
 
+### `download/nsidc.py` — observed sea-ice extent (validation)
+Fetches NSIDC Sea Ice Index monthly extent CSVs (NOAA@NSIDC G02135 v4.0, 1979–
+present) — the observational baseline for validating GenSIM past the 2018 neXtSIM
+window. Extent = ocean area with SIC ≥ 15%, in 10⁶ km². Open access, stdlib only.
+
+```bash
+python download/nsidc.py                 # September, North -> data/obs/nsidc/
+python download/nsidc.py --month 0       # all 12 months
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--month` | `9` | calendar month 1–12, or `0` for all twelve |
+| `--hemisphere` | `north` | `north` or `south` |
+| `--out-dir` | `data/obs/nsidc` | output directory |
+
+Overlay it on `ice_area.py --nsidc …` to compare model vs observed extent.
+
+### `download/nsidc0051.py` — gridded observed concentration (for target correction)
+Fetches **NSIDC-0051 v2** monthly gridded sea-ice concentration (25 km NH polar
+grid) via NASA **Earthdata** — the observational field used to bias-correct the
+neXtSIM `sic` training targets. Needs `pip install earthaccess` and an Earthdata
+login (no EULA; token/user-pass via env or `~/.netrc` — see the file header;
+never commit or pass credentials on the command line).
+
+```bash
+python download/nsidc0051.py --list                        # search + list granule names
+python download/nsidc0051.py                               # download monthly 1995-2025
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--start-year` / `--end-year` | `1995` / `2025` | 1995–2018 = the neXtSIM overlap for target correction; 2019–2025 = gridded obs for validating the projection |
+| `--out-dir` | `data/obs/nsidc0051` | output directory |
+| `--daily` | off | fetch daily instead of monthly |
+| `--list` | off | search + print granule names, download nothing |
+
 ---
 
 # 2 · Preprocess (onto the 512×512 NPS grid)
@@ -149,6 +184,60 @@ python experiments/preprocess_cmip.py --no-bias          # raw (off-distribution
 > PY
 > ```
 
+### `experiments/estimate_normalization_monthly.py` — normalization stats
+Computes the 18-channel mean/std the `GaussianEncoder` standardizes with (6 states
++ 4 forcings×2 + 4 degree-days) from the training datacube, and writes them into
+the monthly Hydra configs. **Run after `preprocess_monthly.py`, before `train.py`.**
+
+```bash
+python experiments/estimate_normalization_monthly.py            # compute + wire into configs
+python experiments/estimate_normalization_monthly.py --no-configs   # print stats only
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--datacube` | `data/train_data/monthly_datacube/monthly_datacube_*.nc` | glob of datacube files |
+| `--out-json` | `experiments/normalization_monthly.json` | stats output |
+| `--no-configs` | off | only compute/print stats, don't edit the configs |
+
+### `experiments/build_zarr_monthly.py` — pack train/validation zarr
+Converts the per-year datacube NetCDFs into the consolidated `train_monthly.zarr`
+/ `validation_monthly.zarr` stores the data module actually loads (a single
+continuous monthly sequence, `delta_t=1`). **Run after normalization, before
+`train.py`.**
+
+```bash
+python experiments/build_zarr_monthly.py
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--datacube-dir` | `data/train_data/monthly_datacube` | input datacube dir |
+| `--out-dir` | `data/train_data` | where the zarr stores are written |
+| `--suffix` | `_monthly` | names them `train<suffix>.zarr` / `validation<suffix>.zarr` |
+| `--val-start-year` | `2015` | first year in the validation store (rest are train) |
+| `--aux-path` | `data/auxiliary/ds_auxiliary.nc` | grid + mask |
+| `--overwrite` | off | rebuild stores that already exist |
+| `--no-verify` | off | skip the post-write read-back check |
+
+### `experiments/preprocess_nsidc0051.py` — regrid observed concentration
+Regrids downloaded NSIDC-0051 monthly concentration onto the 512×512 GenSIM grid
+(projects the EPSG:3411 grid with `pyproj`, handles the pole-hole/land flags,
+nearest-neighbour via `preprocess_monthly`'s helpers). Output is a `sic`-only
+datacube (`data/obs/nsidc0051_grid/`) in the same layout as `monthly_datacube`,
+for correcting the `sic` targets and for spatial validation.
+
+```bash
+python experiments/preprocess_nsidc0051.py                 # 1995-2025 -> obs sic on grid
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--in-dir` | `data/obs/nsidc0051` | downloaded NSIDC-0051 files (North only used) |
+| `--aux` | `data/auxiliary/ds_auxiliary.nc` | target grid + mask |
+| `--out-dir` | `data/obs/nsidc0051_grid` | gridded obs output |
+| `--start-year` / `--end-year` | `1995` / `2025` | years to regrid |
+
+It prints each year's September extent — cross-check against NSIDC's number
+(`ice_area.py … --nsidc data/obs/nsidc`) to confirm the regrid.
+
 ---
 
 # 3 · Train
@@ -166,6 +255,19 @@ python train.py --config-name config_train_monthly_mac ckpt_path=data/models/mon
 Override any config value inline, Hydra-style: `key=value` (e.g.
 `surrogate.optimizer.lr=1e-4`). Checkpoints rotate as `last.ckpt`, `last-v1.ckpt`,
 … ; the trained model is consolidated to `monthly.ckpt` (see *Checkpoints* below).
+
+**Auto-resume:** re-running any `train.py` command continues its run if
+`data/models/<exp_name>/last.ckpt` exists (optimizer, scheduler, step, RNG, EMA
+all restored) — so you can stop (`Ctrl-C`) and pick up any time. Pass an explicit
+`ckpt_path=…` to override, or delete the run dir to start fresh.
+
+**Pushforward (rollout) fine-tune** — teach the model to correct its own
+free-running drift, resumable in short bursts:
+```bash
+python train.py --config-name config_finetune_pushforward_mac
+```
+Starts from `monthly.ckpt`, writes to `data/models/monthly_pf/`. Full guide,
+knobs, and cost in **[docs/PUSHFORWARD.md](PUSHFORWARD.md)**.
 
 ### `experiments/smoke_train_monthly.py` — training smoke test
 Runs a handful of steps to confirm the training loop, data, and device all work
@@ -293,7 +395,7 @@ python experiments/freerun_monthly.py --forcing cmip --years 80 --fast --snapsho
 | `--start` | `2015-01` | start month `YYYY-MM` (initial state from truth) |
 | `--years` | `15` | length of the free run (× 12 = months). Capped by available forcing |
 | `--n-ens` | `8` | ensemble members (mean) |
-| `--fast` | off | first-order sampler + 12 substeps (~3.3 s/step; keep OFF for pretty art frames) |
+| `--fast` | off | first-order sampler + 12 substeps (~3× fewer net evals; keep OFF for pretty art frames) |
 | `--forcing` | `cyclic` | `cyclic` (repeat 2015–18) or `cmip` (scenario, bias-corrected) |
 | `--out-dir` | `plots/freerun` | outputs (csv, diagnostics png, map, snapshots/) |
 | `--snapshot-every` | `12` | save the full spatial state every N months (0=off); final always saved |
@@ -310,6 +412,91 @@ minimum for a shrinking-ice animation.
 = smoothing to mush (classic autoregressive collapse). Under cyclic forcing a
 stable repeating sawtooth is the good outcome *and* the ceiling (no trend to
 respond to). Only the CMIP run can show climate decline.
+
+### `experiments/extend_snapshots.py` — restart from snapshots, step forward
+Reuses existing snapshots as restart points instead of re-running a whole
+rollout. Built for: a long run saved only Jan/Jul snapshots, but you want the
+**September** minimum every year — seed each July state, step 2 months with CMIP
+forcing. 79 Julys × 2 steps ≈ 160 steps (~15 min at `--n-ens 1`) vs a ~12 h full
+re-run. Writes `state_YYYY09.nc` into the snapshots folder so `ice_area.py
+--month 9` / `animate_snapshots.py --month 9` pick them up.
+
+```bash
+python experiments/extend_snapshots.py --fast --n-ens 1 --dry-run   # print the plan, exit
+python experiments/extend_snapshots.py --fast --n-ens 1             # July -> September
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--snap-dir` | `plots/freerun/snapshots` | folder of `state_*.nc` to restart from |
+| `--out-dir` | = `--snap-dir` | where to write the new states |
+| `--from-month` | `7` | restart from this month (7 = July) |
+| `--steps` | `2` | months to advance (7 + 2 = September) |
+| `--cmip-datacube` | `data/train_data/cmip_datacube` | forcing for the extra steps |
+| `--n-ens` | `1` | ensemble members (mean) |
+| `--fast` | off | first-order sampler + 12 substeps |
+| `--overwrite` | off | redo targets that already exist |
+| `--dry-run` | off | print which seeds → which outputs, then exit |
+
+> **Approximation:** snapshots hold the ensemble *mean* (spread was discarded), so
+> restarting from them isn't identical to a continuous rollout — but over 2 months
+> the error is small, fine for a September extent estimate.
+
+### `experiments/animate_snapshots.py` — snapshots → GIF/MP4
+Turns a `freerun` `snapshots/` folder into an animation of one variable on a
+**fixed** colour scale (so the trend shows, not per-frame rescaling), land masked.
+Filter to one calendar month for a yearly-cadence view (e.g. the September
+minimum) or animate every month. Reuses no model — pure plotting from the `.nc`
+files, so it's instant and re-runnable.
+
+```bash
+python experiments/animate_snapshots.py --var sic --month 9        # Sept minimum, yearly
+python experiments/animate_snapshots.py --var sit --out ice.mp4 --fps 12
+python experiments/animate_snapshots.py --selfcheck                # test frame selection
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--snap-dir` | `plots/freerun/snapshots` | folder of `state_*.nc` |
+| `--aux` | `data/auxiliary/ds_auxiliary.nc` | grid + land mask |
+| `--var` | `sic` | variable (`sit`/`sic`/`sid`/`siu`/`siv`/`snt`) |
+| `--month` | all | keep only this calendar month (1–12) |
+| `--out` | `plots/freerun/anim_<var>[_mMM].<gif>` | `.gif` (pillow) or `.mp4` (needs ffmpeg) |
+| `--fps` | `6` | frames per second |
+| `--dpi` | `110` | frame resolution |
+| `--vmin` / `--vmax` | pooled 2/98 pctile | override the fixed colour scale |
+| `--selfcheck` | off | unit-test frame ordering/filtering, exit |
+
+> For the decadal shrinking-ice animation: run the projection with
+> `--snapshot-every 1` (every month saved), then `--var sic --month 9` for the
+> summer minimum over the century. `.gif` needs only pillow; `.mp4` needs ffmpeg.
+
+### `experiments/ice_area.py` — sea-ice area/extent vs time
+Graphs total sea-ice **extent** (area where SIC > threshold) or **area**
+(SIC-weighted) over time, from any state-bearing cube — the neXtSIM truth
+datacube or a `freerun` snapshots folder — and **overlays** several as separate
+lines (e.g. truth 1995–2018 beside a projection). Pure plotting, no model.
+`cmip_datacube` won't work (forcing only, no ice states).
+
+```bash
+python experiments/ice_area.py data/train_data/monthly_datacube               # truth extent
+python experiments/ice_area.py data/train_data/monthly_datacube plots/freerun/snapshots  # truth + projection
+python experiments/ice_area.py plots/freerun/snapshots --month 9 --metric area --csv
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `sources` (positional) | — | one or more cube dirs; each becomes a line |
+| `--labels` | basenames | comma-sep line labels |
+| `--aux` | `data/auxiliary/ds_auxiliary.nc` | grid + mask + `cell_area` |
+| `--metric` | `extent` | `extent` (SIC>threshold) or `area` (SIC-weighted) |
+| `--threshold` | `0.15` | SIC extent threshold (standard 15%) |
+| `--month` | all | keep only this calendar month (e.g. 9 = Sept minimum) |
+| `--nsidc` | none | NSIDC extent CSV or dir (from `download/nsidc.py`) to overlay as observations; needs `--month`; prints each model line's mean offset vs obs |
+| `--out` | `plots/ice_area.png` | output figure |
+| `--csv` | off | also write the series as CSV |
+| `--selfcheck` | off | unit-test the area + NSIDC-parse logic, exit |
+
+> The offset it prints (`model − NSIDC`, M km²) is the anchor correction: NSIDC is
+> pan-Arctic while the model is grid-limited, so treat it as a bias estimate, not
+> an exact accounting.
 
 ### `experiments/drift_rollout.py` — original demo-model drift
 Long free-running rollout for the **original 12-hour demo model** (safetensors
@@ -357,6 +544,18 @@ Switches the flow-matching sampler from second-order (2 model calls/substep) × 
 substeps to **first-order × 12** — ~3× fewer network evals. Fine for skill curves
 and diagnostics; keep it **off** when rendering art frames, where sampling quality
 matters.
+
+### Performance (Apple Silicon / MPS, measured)
+Per-step cost scales **linearly with `--n-ens`** — the ensemble is run through the
+model once per member and MPS doesn't parallelize the batch. Measured with
+`--fast`: **~5.7 s/step at `n_ens=1`, ~44 s/step at `n_ens=8`.** For a long
+`freerun` (960 steps = 80 yr) that's ~90 min at `n_ens=1`, ~6 h at `n_ens=4`,
+~12 h at `n_ens=8`. Ensemble mean improves one-step skill (~10 points), so keep
+`n_ens=8` for `eval`/`rollout`; drop to 1–4 for long projections where the
+seasonal cycle and trend matter more than per-frame noise. The first step of any
+run includes a one-off ~100 s MPS kernel compilation — ignore it in the average.
+Snapshot frequency and forcing source (`cyclic`/`cmip`) do **not** affect step
+cost (both are sub-second I/O).
 
 ### Skill and baselines
 `skill = 1 − RMSE_model / RMSE_baseline`, per variable, over ocean cells (>0 beats
@@ -407,6 +606,8 @@ python download/cmip.py                        # optional: future scenario
 
 # 2. preprocess
 python experiments/preprocess_monthly.py
+python experiments/estimate_normalization_monthly.py   # normalization stats -> configs
+python experiments/build_zarr_monthly.py               # pack train/validation zarr
 python experiments/preprocess_cmip.py          # optional: bias-corrected future forcing
 
 # 3. train (Apple Silicon)
