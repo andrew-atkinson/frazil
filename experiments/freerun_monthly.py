@@ -22,6 +22,7 @@ import argparse
 import csv
 import glob
 import os
+import re
 import sys
 import time
 
@@ -34,7 +35,23 @@ import xarray as xr
 
 sys.path.insert(0, os.path.dirname(__file__))
 import eval_monthly as E
+import results_log as RL
 from drift_rollout import step_diagnostics, SIC_THRESHOLD  # reuse the diagnostics
+
+
+def snap_tag(ckpt, forcing):
+    """Namespace snapshots by model + forcing so runs never clobber each other:
+    monthly.ckpt+cmip -> 'monthly_cmip'; monthly_pf/last.ckpt+cmip -> 'monthly_pf_cmip';
+    monthly_pf/step_10000.ckpt+cyclic -> 'monthly_pf_step_10000_cyclic'."""
+    stem = os.path.splitext(os.path.basename(ckpt))[0]
+    parent = os.path.basename(os.path.dirname(ckpt))
+    if re.match(r"^(last|best)(-v\d+)?$", stem):      # generic Lightning names
+        model = parent
+    elif stem.startswith("step_"):
+        model = f"{parent}_{stem}"
+    else:
+        model = stem
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", f"{model}_{forcing}")
 
 
 def load_series(datacube_dir, names):
@@ -67,11 +84,14 @@ def main(argv=None):
                     help="save the full spatial state every N months (0=off); the "
                          "final state is always saved. These are what maps are drawn from.")
     ap.add_argument("--no-map", action="store_true", help="skip the final-state map figure")
+    ap.add_argument("--note", default="", help="annotation stored with the logged result")
+    ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    model = E.load_model(args.ckpt or E.default_ckpt(), args.config, device, args.train_config)
+    ckpt = args.ckpt or E.default_ckpt()
+    model = E.load_model(ckpt, args.config, device, args.train_config)
 
     if args.fast:  # ~3x fewer net evals; fine for self-consistency diagnostics
         s = model.sampler
@@ -158,9 +178,12 @@ def main(argv=None):
     state = rep(torch.as_tensor(states_r[t0][None], device=device, dtype=torch.float32))
 
     os.makedirs(args.out_dir, exist_ok=True)
-    snap_dir = os.path.join(args.out_dir, "snapshots")
+    # Namespace snapshots by model+forcing so concurrent/serial runs never
+    # overwrite each other's frames (e.g. snapshots/monthly_pf_cmip/).
+    snap_dir = os.path.join(args.out_dir, "snapshots", snap_tag(ckpt, args.forcing))
     if args.snapshot_every:
         os.makedirs(snap_dir, exist_ok=True)
+        print(f"[freerun] snapshots -> {snap_dir}", flush=True)
     base_date = pd.Timestamp(f"{args.start}-01")   # forward calendar for naming
 
     rows = []
@@ -224,6 +247,23 @@ def main(argv=None):
         w = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
+
+    # Log a compact drift summary (initial/final/min/max of the stability
+    # diagnostics) so free-run behaviour is comparable across checkpoints.
+    if not args.no_log:
+        def stat(key):
+            s = [r[key] for r in rows]
+            return {"initial": s[0], "final": s[-1], "min": min(s), "max": max(s)}
+        keys = ["mean_sit", "mean_sic", "ice_area_km2", "sharpness_sit", "sharpness_sic"]
+        drift = {k: stat(k) for k in keys}
+        drift["years_completed"] = round((len(rows) - 1) / 12, 3)
+        drift["nonfinite_total"] = sum(r["n_nonfinite"] for r in rows)
+        drift["sharpness_sit_retention"] = (
+            rows[-1]["sharpness_sit"] / (rows[0]["sharpness_sit"] or 1.0))
+        RL.log_result("freerun_monthly",
+                      {**vars(args), "ckpt_resolved": ckpt, "snap_dir": snap_dir,
+                       "seed": 42},
+                      drift, note=args.note)
 
     plot(rows, anchor, args, csv_path)
     if not args.no_map:

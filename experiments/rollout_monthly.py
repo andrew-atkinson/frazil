@@ -29,6 +29,7 @@ import xarray as xr
 
 sys.path.insert(0, os.path.dirname(__file__))
 import eval_monthly as E
+import results_log as RL
 
 
 def build_climatology(datacube_dir, before_year):
@@ -64,6 +65,8 @@ def main(argv=None):
     ap.add_argument("--fast", action="store_true",
                     help="first-order sampler + fewer substeps (for skill curves, not art)")
     ap.add_argument("--out-png", default="plots/rollout_multistart.png")
+    ap.add_argument("--note", default="", help="annotation stored with the logged result")
+    ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
@@ -194,6 +197,21 @@ def main(argv=None):
                    + [f"{skill[v][i]:.4f}" for v in E.STATES]
                    + ([f"{skill_c[v][i]:.4f}" for v in E.STATES] if have_clim else []))
             w.writerow(row)
+
+    # Append a structured record to the results ledger (per-variable arrays
+    # across leads), pinned to the exact checkpoint + code state.
+    if not args.no_log:
+        ckpt = args.ckpt or E.default_ckpt()
+        params = {**vars(args), "ckpt_resolved": ckpt, "seed": 42}
+        metrics = {
+            "leads_months": [int(L) for L in leads],
+            "n_starts_per_lead": [nstart[int(L)] for L in leads],
+            "skill_vs_persistence": {v: skill[v].tolist() for v in E.STATES},
+            "skill_vs_climatology": ({v: skill_c[v].tolist() for v in E.STATES}
+                                     if have_clim else None),
+            "rmse_model": {v: [rmse_m[v][i] for i in range(len(leads))] for v in E.STATES},
+        }
+        RL.log_result("rollout_monthly", params, metrics, note=args.note)
 
     import matplotlib
     matplotlib.use("Agg")

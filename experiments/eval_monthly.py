@@ -133,6 +133,8 @@ def main(argv=None):
     ap.add_argument("--val-start-year", type=int, default=2015)
     ap.add_argument("--max-pairs", type=int, default=0, help="0 = all val pairs")
     ap.add_argument("--n-ens", type=int, default=1, help="ensemble members (mean)")
+    ap.add_argument("--note", default="", help="annotation stored with the logged result")
+    ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
@@ -148,13 +150,25 @@ def main(argv=None):
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
     print(f"  {'var':5s} {'GenSIM':>10s} {'persistence':>12s} {'skill':>8s}")
     beats = 0
+    skill_v, rm_v, rp_v = {}, {}, {}
     for v in STATES:
         rm, rp = rmse[v]
         skill = 1 - rm / rp if rp > 0 else float("nan")
+        skill_v[v], rm_v[v], rp_v[v] = skill, rm, rp
         beats += skill > 0
         print(f"  {v:5s} {rm:10.4f} {rp:12.4f} {skill:+8.1%}   ({UNITS[v]})")
     print(f"\n=> beats persistence on {beats}/{len(STATES)} variables "
           f"(skill > 0 = model better than 'no change')")
+
+    if not args.no_log:
+        import results_log as RL
+        RL.log_result("eval_monthly",
+                      {**vars(args), "ckpt_resolved": ckpt, "seed": 42,
+                       "val_months": int(cube.sizes["time"])},
+                      {"skill_vs_persistence": skill_v,
+                       "rmse_model": rm_v, "rmse_persistence": rp_v,
+                       "beats_persistence": beats},
+                      note=args.note)
 
 
 if __name__ == "__main__":
