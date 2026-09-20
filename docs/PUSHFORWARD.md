@@ -89,6 +89,47 @@ python experiments/freerun_monthly.py --years 15 --fast --ckpt data/models/month
 steps that used the pushforward path, and `train/loss` / `val/loss` track training
 as usual (remember flow-matching NLL doesn't go to zero — judge by skill, not loss).
 
+## Results — 20k-step fine-tune (Sep 2026)
+
+`monthly.ckpt` → `monthly_pf/last.ckpt` (20 000 steps, `pushforward_prob=0.5`,
+8 substeps). Both tests agree: **it works, consistently, modestly** — better on
+every metric, nothing worse, gains concentrated at long lead / long horizon
+exactly as intended.
+
+**One-step-ahead skill vs lead** (`rollout_monthly`, skill vs climatology, points
+gained baseline→pf):
+
+| lead | sit | sic | sid | siu | siv | snt |
+|---|---|---|---|---|---|---|
+| 1mo | +0 | +1 | +1 | +1 | +1 | +0 |
+| 3mo | +1 | +1 | +2 | +2 | +2 | +2 |
+| 6mo | +2 | +2 | +4 | +2 | +2 | +2 |
+| 12mo | +2 | +2 | +3 | +2 | +2 | +2 |
+
+The gain **grows with lead** (≈0 at 1 mo → +2–4 by 6–12 mo) — the drift-correction
+signature. `sid` (damage), the noisiest field, benefits most.
+
+**15-yr free-running drift** (`freerun_monthly`, cyclic forcing; stable = good):
+
+| metric | baseline | pushforward |
+|---|---|---|
+| sharpness SIT retention (final/initial) | 0.586 | **0.615** |
+| sharpness SIC retention | 0.910 | **0.921** |
+| ice-area drift, final−initial (M km²) | −0.305 | **−0.277** |
+| mean SIT drift (m) | −0.068 | **−0.060** |
+| years completed / non-finite | 15 / 0 | 15 / 0 |
+
+Better sharpness retention (smooths toward mush less) and slightly less area/mean
+drift, on every axis. Gains are small here because under *stationary cyclic*
+forcing the baseline was already stable — the effect is larger at long
+autoregressive lead (above) and would compound more under trending CMIP forcing.
+
+**Verdict:** `monthly_pf/last.ckpt` is a strictly-better model — worth keeping,
+not transformative. For more, fine-tune longer (resumable), raise
+`pushforward_prob`, or go 2-step (`data.n_rollout_steps=3`); returns look
+diminishing for the "broad monthly evolution" use. Both runs are in
+`results/experiments.jsonl` (reproducible).
+
 ## What changed in the code
 
 - `gensim/dataset.py` — returns per-frame degree-days (so the 2nd transition has
