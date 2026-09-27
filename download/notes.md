@@ -1,8 +1,7 @@
 
 ## Sources
 
-The 6 sea-ice state variables it predicts — sit (thickness), sic (concentration), sid (damage), siu/siv (drift), snt (snow-on-ice) — come from neXtSIM-OPA, a sea-ice model (the Moorings_YYYYmMM.nc files). These are the training targets/truth.
-ERA5 supplies only the atmospheric forcing (temperature, humidity, winds).
+The 6 sea-ice state variables it predicts — sit (thickness), sic (concentration), sid (damage), siu/siv (drift), snt (snow-on-ice) — come from neXtSIM-OPA, a sea-ice model (the Moorings_YYYYmMM.nc files). These are the training targets/truth. ERA5 supplies only the atmospheric forcing (temperature, humidity, winds).
 
 ### ERA5 
 
@@ -10,12 +9,7 @@ What ERA5 parameters you actually need
 
 The pipeline downloads 5 raw ERA5 fields and derives everything else:
 
-Download from ERA5	Used to produce
-2 m temperature	tus + all 4 degree-day features (pdd_month, fdd_month, pdd_year, fdd_year)
-2 m dewpoint temperature	huss (specific humidity), rhus (relative humidity)
-surface pressure	needed for the specific-humidity calc
-10 m u-component of wind	uas (after rotation to the grid)
-10 m v-component of wind	vas (after rotation to the grid)
+Download from ERA5	Used to produce 2 m temperature	tus + all 4 degree-day features (pdd_month, fdd_month, pdd_year, fdd_year) 2 m dewpoint temperature	huss (specific humidity), rhus (relative humidity) surface pressure	needed for the specific-humidity calc 10 m u-component of wind	uas (after rotation to the grid) 10 m v-component of wind	vas (after rotation to the grid)
 
 So you do not download degree-days or humidity — they're computed. Note the model at inference only consumes tus, huss, uas, vas + the 4 degree-days; the raw list above is what the preprocessing needs to build those.
 
@@ -24,11 +18,9 @@ So you do not download degree-days or humidity — they're computed. Note the mo
 
 The neXtSIM-OPA simulation GenSIM was trained on is **`OPA-neXtSIM_CREG025-ILBOXE140`**, hosted on the IGE-MEOM THREDDS server in Grenoble. It's served as **per-file NetCDF over OPeNDAP/HTTP**, *not* a Zarr store — so `xr.open_zarr` will never work here regardless of the URL.
 
-**Catalog (browse it in a browser):**
-`https://ige-meom-opendap.univ-grenoble-alpes.fr/thredds/catalog/meomopendap/extract/SASIP/model-outputs/OPA-neXtSIM_CREG025/catalog.html`
+**Catalog (browse it in a browser):** `https://ige-meom-opendap.univ-grenoble-alpes.fr/thredds/catalog/meomopendap/extract/SASIP/model-outputs/OPA-neXtSIM_CREG025/catalog.html`
 
-Under it, the time-averaged tree has exactly what you want:
-`OPA-neXtSIM_CREG025-ILBOXE140-MEAN/` → **`1m/`** (monthly), `1d/` (daily), `6h/` (6-hourly), organized `1m/<year>/`.
+Under it, the time-averaged tree has exactly what you want: `OPA-neXtSIM_CREG025-ILBOXE140-MEAN/` → **`1m/`** (monthly), `1d/` (daily), `6h/` (6-hourly), organized `1m/<year>/`.
 
 **The monthly sea-ice files** are `*_icemod.nc` (thickness, concentration, **damage**, u/v drift) and `*_simba.nc` (snow/ice thermodynamics). A verified real filename:
 
@@ -38,8 +30,7 @@ OPA-neXtSIM_CREG025-ILBOXE140_y2015m12.1m_icemod.nc
 
 Which gives these two working URL forms:
 
-- **OPeNDAP** (open remotely, subset server-side): replace `catalog/…/catalog.html` with `dodsC/…/<file>` →
-  `.../thredds/dodsC/meomopendap/extract/SASIP/model-outputs/OPA-neXtSIM_CREG025/OPA-neXtSIM_CREG025-ILBOXE140-MEAN/1m/2015/OPA-neXtSIM_CREG025-ILBOXE140_y2015m12.1m_icemod.nc` → `xr.open_dataset(url)`
+- **OPeNDAP** (open remotely, subset server-side): replace `catalog/…/catalog.html` with `dodsC/…/<file>` → `.../thredds/dodsC/meomopendap/extract/SASIP/model-outputs/OPA-neXtSIM_CREG025/OPA-neXtSIM_CREG025-ILBOXE140-MEAN/1m/2015/OPA-neXtSIM_CREG025-ILBOXE140_y2015m12.1m_icemod.nc` → `xr.open_dataset(url)`
 - **Direct download**: same but `fileServer/…` instead of `dodsC/…`.
 
 There's also a `dl_data.sh` helper and a `README` in the root folder. Contact for the dataset: **Guillaume Boutin (NERSC)**; citation DOI **[10.5281/zenodo.7277523](https://doi.org/10.5281/zenodo.7277523)** (Boutin et al., 2023, *The Cryosphere*).
@@ -77,7 +68,7 @@ All six GenSIM targets are present in a **single** file type — `_icemod.nc` �
 | `siv`         | `siv`            | Sea Ice Y Velocity     | m/s   |
 | `snt`         | `snt`            | Surface Snow Thickness | m     |
 
-Only rename needed: **`damage` → `sid`**. Grid is native curvilinear CREG025 (603×528, 2-D `latitude`/`longitude`), one timestep per monthly file. OPeNDAP works and selecting the 6 vars keeps the transfer small. 
+Only rename needed: **`damage` → `sid`**. Grid is native curvilinear CREG025 (603×528, 2-D `latitude`/`longitude`), one timestep per monthly file. OPeNDAP works and selecting the 6 vars keeps the transfer small.
 
 
 
@@ -88,5 +79,5 @@ The grid is clear: 512×512 North Polar Stereographic, ~12.5 km, spanning 41.6°
 
 ## Config file
 
-`.cdsapirc` is located in the home directory. 
+`.cdsapirc` is located in the home directory.
 
