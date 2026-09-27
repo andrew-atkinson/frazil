@@ -60,7 +60,8 @@ def main(argv=None):
     ap.add_argument("--n-ens", type=int, default=8)
     ap.add_argument("--fast", action="store_true")
     ap.add_argument("--threshold", type=float, default=0.15)
-    ap.add_argument("--out", default="plots/ensemble_extent_sept.png")
+    ap.add_argument("--out", default=None,
+                    help="default: plots/ensext_<model>_m<MM>.png")
     args = ap.parse_args(argv)
 
     tgt_month = (args.from_month + args.steps - 1) % 12 + 1
@@ -72,7 +73,9 @@ def main(argv=None):
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     torch.manual_seed(42)
-    model = E.load_model(args.ckpt or E.default_ckpt(), args.config, device, args.train_config)
+    ckpt = args.ckpt or E.default_ckpt()
+    args.out = args.out or f"plots/ensext_{E.model_tag(ckpt)}_m{tgt_month:02d}.png"
+    model = E.load_model(ckpt, args.config, device, args.train_config)
     if args.fast:
         s = model.sampler
         s.second_order = False
@@ -94,7 +97,7 @@ def main(argv=None):
     cds = xr.open_mfdataset(sorted(glob.glob(f"{args.cmip_datacube}/*_datacube_*.nc")),
                             combine="by_coords")["datacube"]
     times_f = pd.DatetimeIndex(cds["time"].values)
-    fda = cds.sel(var_names=E.FORCINGS).transpose("time", "var_names", "y", "x")
+    fda = cds.sel(var_names=model.forcing_names).transpose("time", "var_names", "y", "x")
     dda = cds.sel(var_names=E.DEGREE).transpose("time", "var_names", "y", "x")
     at = lambda da, k: np.nan_to_num(da.isel(time=k).values).astype(np.float32)
 

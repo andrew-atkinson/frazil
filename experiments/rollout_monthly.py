@@ -64,14 +64,17 @@ def main(argv=None):
     ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")
     ap.add_argument("--fast", action="store_true",
                     help="first-order sampler + fewer substeps (for skill curves, not art)")
-    ap.add_argument("--out-png", default="plots/rollout_multistart.png")
+    ap.add_argument("--out-png", default=None,
+                    help="default: plots/rollout_<model>.png (self-describing)")
     ap.add_argument("--note", default="", help="annotation stored with the logged result")
     ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    model = E.load_model(args.ckpt or E.default_ckpt(), args.config, device, args.train_config)
+    ckpt = args.ckpt or E.default_ckpt()
+    args.out_png = args.out_png or f"plots/rollout_{E.model_tag(ckpt)}.png"
+    model = E.load_model(ckpt, args.config, device, args.train_config)
 
     if args.fast:  # ~4x fewer net evals: drop 2nd-order (2 calls->1) and subsample schedule
         s = model.sampler
@@ -125,7 +128,7 @@ def main(argv=None):
             t = t0 + lead - 1
             if t + 1 >= n:
                 break
-            forc = np.stack([arr(t, E.FORCINGS), arr(t + 1, E.FORCINGS)])
+            forc = np.stack([arr(t, model.forcing_names), arr(t + 1, model.forcing_names)])
             forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
             dd = rep(torch.as_tensor(arr(t, E.DEGREE)[None], device=device, dtype=torch.float32))
             with torch.no_grad():

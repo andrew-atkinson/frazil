@@ -40,18 +40,9 @@ from drift_rollout import step_diagnostics, SIC_THRESHOLD  # reuse the diagnosti
 
 
 def snap_tag(ckpt, forcing):
-    """Namespace snapshots by model + forcing so runs never clobber each other:
-    monthly.ckpt+cmip -> 'monthly_cmip'; monthly_pf/last.ckpt+cmip -> 'monthly_pf_cmip';
-    monthly_pf/step_10000.ckpt+cyclic -> 'monthly_pf_step_10000_cyclic'."""
-    stem = os.path.splitext(os.path.basename(ckpt))[0]
-    parent = os.path.basename(os.path.dirname(ckpt))
-    if re.match(r"^(last|best)(-v\d+)?$", stem):      # generic Lightning names
-        model = parent
-    elif stem.startswith("step_"):
-        model = f"{parent}_{stem}"
-    else:
-        model = stem
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", f"{model}_{forcing}")
+    """Namespace outputs by model + forcing so runs never clobber each other:
+    monthly.ckpt+cmip -> 'monthly_cmip'; monthly_pf/last.ckpt+cmip -> 'monthly_pf_cmip'."""
+    return f"{E.model_tag(ckpt)}_{forcing}"
 
 
 def load_series(datacube_dir, names):
@@ -78,12 +69,24 @@ def main(argv=None):
     ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")
     ap.add_argument("--fast", action="store_true",
                     help="first-order sampler + fewer substeps (for diagnostics, not art)")
-    ap.add_argument("--forcing", choices=["cyclic", "cmip"], default="cyclic")
+    ap.add_argument("--forcing", choices=["cyclic", "cmip", "era5"], default="cyclic",
+                    help="era5: the real ERA5 forcing of each successive month (a true "
+                         "hindcast); past 2018 it continues from --era5-ext")
+    ap.add_argument("--era5-ext", default="data/train_data/era5_forcing_datacube",
+                    help="forcing-only ERA5 cube beyond neXtSIM's 2018 end "
+                         "(preprocess_monthly.py --forcings-only)")
     ap.add_argument("--out-dir", default="plots/freerun")
     ap.add_argument("--snapshot-every", type=int, default=12,
                     help="save the full spatial state every N months (0=off); the "
                          "final state is always saved. These are what maps are drawn from.")
     ap.add_argument("--no-map", action="store_true", help="skip the final-state map figure")
+    ap.add_argument("--climatology-forcing", nargs="*", default=[],
+                    help="era5 only: replace these forcing channels (e.g. sst) with their "
+                         "1995-2014 calendar-month mean, removing year-specific information "
+                         "(e.g. the observed-ice imprint in ERA5 SST). Tagged '_clim-<vars>'.")
+    ap.add_argument("--save-members", action="store_true",
+                    help="with each snapshot also write every member's sic "
+                         "(members_YYYYMM.nc, dims member,y,x) for ensemble-summary studies")
     ap.add_argument("--note", default="", help="annotation stored with the logged result")
     ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
@@ -111,8 +114,8 @@ def main(argv=None):
     # The cyclic forcing is only used by the cyclic path -- don't load its ~2.4GB
     # in CMIP mode (that plus the CMIP forcing was thrashing swap).
     forc_r = dd_r = None
-    if args.forcing == "cyclic":
-        forc_r, _ = load_series(args.datacube, E.FORCINGS)
+    if args.forcing in ("cyclic", "era5"):
+        forc_r, _ = load_series(args.datacube, model.forcing_names)
         dd_r, _ = load_series(args.datacube, E.DEGREE)
 
     hit = np.where((times_r.year == int(args.start[:4])) &
@@ -131,9 +134,17 @@ def main(argv=None):
             raise SystemExit(f"no datacube files in {args.cmip_datacube}")
         cds = xr.open_mfdataset(files, combine="by_coords")["datacube"]
         times_f = pd.DatetimeIndex(cds["time"].values)
-        if len(times_f) < nsteps + 1:
-            raise SystemExit(f"cmip forcing has {len(times_f)} months < {nsteps+1} needed")
-        fda = cds.sel(var_names=E.FORCINGS).transpose("time", "var_names", "y", "x")
+        # Forcing must start at the same month as the initial state.
+        hit_f = np.where((times_f.year == int(args.start[:4])) &
+                         (times_f.month == int(args.start[5:7])))[0]
+        if len(hit_f) == 0:
+            raise SystemExit(f"start {args.start} not in {args.cmip_datacube} "
+                             f"({times_f[0]:%Y-%m}..{times_f[-1]:%Y-%m})")
+        f0 = int(hit_f[0])
+        if len(times_f) - f0 < nsteps + 1:
+            raise SystemExit(f"cmip forcing has {len(times_f) - f0} months from {args.start} "
+                             f"< {nsteps+1} needed")
+        fda = cds.sel(var_names=model.forcing_names).transpose("time", "var_names", "y", "x")
         dda = cds.sel(var_names=E.DEGREE).transpose("time", "var_names", "y", "x")
         # Read the bias-correction stamp preprocess_cmip writes onto the datacube.
         bc = None
@@ -154,8 +165,37 @@ def main(argv=None):
             return np.nan_to_num(da.isel(time=k).values).astype(np.float32)
 
         def forc_pair(k):  # (t, t+1) forcing pair + degree-days at step k
-            return _at(fda, k), _at(fda, k + 1), _at(dda, k)
-        month_of = lambda k: times_f[k].month
+            return _at(fda, f0 + k), _at(fda, f0 + k + 1), _at(dda, f0 + k)
+        month_of = lambda k: times_f[f0 + k].month
+    elif args.forcing == "era5":  # true hindcast: real forcing of each successive month
+        times_e = times_r
+        if t0 + nsteps >= n_real and os.path.isdir(args.era5_ext):
+            # Past neXtSIM's end: append the forcing-only ERA5 extension (no truth there).
+            fx, tx = load_series(args.era5_ext, model.forcing_names)
+            dx, _ = load_series(args.era5_ext, E.DEGREE)
+            keep = np.asarray(tx > times_r[-1])
+            forc_r = np.concatenate([forc_r, fx[keep]])
+            dd_r = np.concatenate([dd_r, dx[keep]])
+            times_e = times_r.append(tx[keep])
+            print(f"[freerun] ERA5 extension: +{int(keep.sum())} months from {args.era5_ext}")
+        ym = times_e.year * 12 + times_e.month
+        if (np.diff(ym) != 1).any():
+            raise SystemExit("era5 forcing has a gap or overlap between the datacube and "
+                             f"{args.era5_ext} -- months must be consecutive")
+        if t0 + nsteps >= len(times_e):
+            raise SystemExit(f"era5 hindcast: start {args.start} + {args.years}yr runs past "
+                             f"{times_e[-1]:%Y-%m} (only {(len(times_e)-1-t0)/12:.1f}yr of real forcing left); "
+                             f"reduce --years, move --start earlier, or build {args.era5_ext}")
+        base = np.asarray((times_e.year >= 1995) & (times_e.year <= 2014))
+        for name in args.climatology_forcing:
+            j = model.forcing_names.index(name)
+            for mo in range(1, 13):
+                sel = np.asarray(times_e.month == mo)
+                forc_r[sel, j] = forc_r[base & sel, j].mean(0)
+            print(f"[freerun] {name}: replaced by its 1995-2014 monthly climatology")
+        def forc_pair(k):
+            return forc_r[t0 + k], forc_r[t0 + k + 1], dd_r[t0 + k]
+        month_of = lambda k: times_e[t0 + k].month
     else:  # cyclic groundhog decade over the 48 real months
         def forc_pair(k):
             a, b = (t0 + k) % n_real, (t0 + k + 1) % n_real
@@ -178,9 +218,13 @@ def main(argv=None):
     state = rep(torch.as_tensor(states_r[t0][None], device=device, dtype=torch.float32))
 
     os.makedirs(args.out_dir, exist_ok=True)
-    # Namespace snapshots by model+forcing so concurrent/serial runs never
-    # overwrite each other's frames (e.g. snapshots/monthly_pf_cmip/).
-    snap_dir = os.path.join(args.out_dir, "snapshots", snap_tag(ckpt, args.forcing))
+    # Namespace ALL outputs by model+forcing so runs never overwrite each other
+    # (e.g. freerun_monthly_pf_cmip.*, snapshots/monthly_pf_cmip/).
+    # era5 runs carry their start year: different starts are different runs.
+    tag = snap_tag(ckpt, f"era5_{args.start[:4]}" if args.forcing == "era5" else args.forcing)
+    if args.climatology_forcing:
+        tag += "_clim-" + "-".join(args.climatology_forcing)
+    snap_dir = os.path.join(args.out_dir, "snapshots", tag)
     if args.snapshot_every:
         os.makedirs(snap_dir, exist_ok=True)
         print(f"[freerun] snapshots -> {snap_dir}", flush=True)
@@ -190,6 +234,7 @@ def main(argv=None):
     d0 = step_diagnostics(states_r[t0], ocean, cell_area)  # step 0 (initial truth)
     d0["year"] = 0.0
     d0["wall_s"] = 0.0
+    d0["ext_members_km2"], d0["ext_members_std_km2"] = d0["ice_area_km2"], 0.0  # members start identical
     rows.append(d0)
     sm = states_r[t0]
     last_date = base_date
@@ -203,8 +248,14 @@ def main(argv=None):
             state = model(state[:, None], forc, resolution=resolution, mesh=mesh,
                           mask=mask, degree_days=ddt)
         sm = state.mean(0).cpu().numpy()  # ensemble-mean state (6,H,W)
+        sic_m = state[:, 1].cpu().numpy()  # each member's sic (n_ens,H,W)
         last_date = base_date + pd.DateOffset(months=k + 1)
         d = step_diagnostics(sm, ocean, cell_area)
+        # Extent of the MEAN over-counts the soft edge where members disagree;
+        # the mean of each member's own extent is the unbiased ensemble number.
+        ext_m = (((sic_m > SIC_THRESHOLD) & ocean) * cell_area).sum((1, 2)) / 1e6
+        d["ext_members_km2"] = float(ext_m.mean())
+        d["ext_members_std_km2"] = float(ext_m.std())
         d["year"] = (k + 1) / 12
         d["wall_s"] = time.time() - t_step
         rows.append(d)
@@ -213,13 +264,18 @@ def main(argv=None):
         eta = rate * (nsteps - k - 1)
         print(f"  yr {d['year']:5.2f}  mon {month_of(k):2d}  "
               f"sit={d['mean_sit']:.3f} sic={d['mean_sic']:.3f} "
-              f"area={d['ice_area_km2']:.2e} nan={d['n_nonfinite']}  "
+              f"ext mean-field={d['ice_area_km2']:.2e} members={d['ext_members_km2']:.2e} "
+              f"nan={d['n_nonfinite']}  "
               f"{d['wall_s']:.1f}s/step  ETA {eta/60:4.0f}m", end="\r", flush=True)
         last_nonfinite = d["n_nonfinite"] > 0
         if args.snapshot_every and ((k + 1) % args.snapshot_every == 0
                                     or k + 1 == nsteps or last_nonfinite):
             save_state(sm, last_date, os.path.join(
                 snap_dir, f"state_{last_date:%Y%m}.nc"))
+            if args.save_members:
+                xr.DataArray(sic_m, dims=("member", "y", "x"), name="sic").to_netcdf(
+                    os.path.join(snap_dir, f"members_{last_date:%Y%m}.nc"),
+                    encoding={"sic": {"zlib": True, "complevel": 4}})
         if last_nonfinite:
             print(f"\n[freerun] non-finite at year {d['year']:.2f} -- stopping"); break
 
@@ -239,10 +295,11 @@ def main(argv=None):
         da["year"] = (t - t0) / 12
         anchor.append(da)
 
-    fields = ["year", "wall_s", "mean_sit", "mean_sic", "ice_area_km2", "mean_speed",
+    fields = ["year", "wall_s", "mean_sit", "mean_sic", "ice_area_km2",
+              "ext_members_km2", "ext_members_std_km2", "mean_speed",
               "sharpness_sit", "sharpness_sic", "frac_sic_saturated",
               "frac_sic_zero", "frac_sit_zero", "n_nonfinite"]
-    csv_path = os.path.join(args.out_dir, f"freerun_{args.forcing}.csv")
+    csv_path = os.path.join(args.out_dir, f"freerun_{tag}.csv")
     with open(csv_path, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
@@ -255,6 +312,7 @@ def main(argv=None):
             s = [r[key] for r in rows]
             return {"initial": s[0], "final": s[-1], "min": min(s), "max": max(s)}
         keys = ["mean_sit", "mean_sic", "ice_area_km2", "sharpness_sit", "sharpness_sic"]
+        keys += ["ext_members_km2"] if "ext_members_km2" in rows[-1] else []
         drift = {k: stat(k) for k in keys}
         drift["years_completed"] = round((len(rows) - 1) / 12, 3)
         drift["nonfinite_total"] = sum(r["n_nonfinite"] for r in rows)
@@ -267,8 +325,8 @@ def main(argv=None):
 
     plot(rows, anchor, args, csv_path)
     if not args.no_map:
-        state_map(sm, ocean, os.path.join(args.out_dir, f"freerun_{args.forcing}_map.png"),
-                  f"GenSIM sea ice {last_date:%Y-%m}  ({args.years}yr free run, {args.forcing})")
+        state_map(sm, ocean, os.path.join(args.out_dir, f"freerun_{tag}_map.png"),
+                  f"GenSIM sea ice {last_date:%Y-%m}  ({args.years}yr free run, {tag})")
 
 
 def save_state(sm, date, path):

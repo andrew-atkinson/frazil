@@ -41,12 +41,16 @@ def main(argv=None):
     ap.add_argument("--target-year", type=int, default=2018)
     ap.add_argument("--target-month", type=int, default=3)
     ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")
-    ap.add_argument("--out-png", default="plots/forecast_maps.png")
+    ap.add_argument("--out-png", default=None,
+                    help="default: plots/forecast_<model>_<YYYY-MM>.png")
     args = ap.parse_args(argv)
 
     torch.manual_seed(42)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    model = E.load_model(args.ckpt or E.default_ckpt(), args.config, device, args.train_config)
+    ckpt = args.ckpt or E.default_ckpt()
+    args.out_png = args.out_png or (
+        f"plots/forecast_{E.model_tag(ckpt)}_{args.target_year}-{args.target_month:02d}.png")
+    model = E.load_model(ckpt, args.config, device, args.train_config)
 
     cube = xr.open_mfdataset(sorted(glob.glob(f"{args.datacube}/monthly_datacube_*.nc")),
                              combine="by_coords")["datacube"].load()
@@ -77,7 +81,7 @@ def main(argv=None):
         return np.nan_to_num(cube.isel(time=t).sel(var_names=names).values)
 
     states = rep(torch.as_tensor(arr(prev, E.STATES)[None], device=device, dtype=torch.float32))
-    forc = np.stack([arr(prev, E.FORCINGS), arr(ti, E.FORCINGS)])
+    forc = np.stack([arr(prev, model.forcing_names), arr(ti, model.forcing_names)])
     forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
     dd = rep(torch.as_tensor(arr(prev, E.DEGREE)[None], device=device, dtype=torch.float32))
     with torch.no_grad():

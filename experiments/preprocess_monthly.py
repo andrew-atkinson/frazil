@@ -335,6 +335,32 @@ def build_datacube_year(year, states, s_keys, forcings, f_index, ds_aux):
     )
 
 
+def write_forcings_only(forcings, f_keys, years, ds_aux, out_dir, overwrite):
+    """One (time, var_names, y, x) forcing cube per year, same channels and
+    layout as the forcing half of the training datacube."""
+    ocean = ds_aux["mask"].values.astype(bool)
+    for yr in (years or sorted({y for y, _ in f_keys})):
+        out_path = out_dir / f"era5_datacube_{yr}.nc"
+        if out_path.exists() and not overwrite:
+            print(f"[{yr}] exists -> {out_path.name} (skip)")
+            continue
+        idx = [i for i, (y, _) in enumerate(f_keys) if y == yr]
+        if not idx:
+            print(f"[{yr}] no ERA5 months -- skipped")
+            continue
+        data = np.stack([forcings[v][idx] for v in FORCING_VARS], axis=1)  # (t, var, y, x)
+        data[:, :, ~ocean] = np.nan
+        cube = xr.DataArray(
+            data, dims=("time", "var_names", "y", "x"),
+            coords={"time": [pd.Timestamp(year=yr, month=f_keys[i][1], day=15) for i in idx],
+                    "var_names": FORCING_VARS,
+                    "longitude": (("y", "x"), ds_aux["longitude"].values),
+                    "latitude": (("y", "x"), ds_aux["latitude"].values)},
+            name="datacube")
+        cube.to_dataset().to_netcdf(out_path, encoding={"datacube": {"zlib": True, "complevel": 4}})
+        print(f"[{yr}] wrote {len(idx)} forcing months -> {out_path}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -347,6 +373,9 @@ def main(argv=None):
     ap.add_argument("--years", type=int, nargs="*", default=None,
                     help="subset of years to process (default: all found)")
     ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument("--forcings-only", action="store_true",
+                    help="write forcing-only cubes (era5_datacube_YYYY.nc, no ice states) "
+                         "for years past neXtSIM's end, e.g. the 2019-2025 hindcast")
     args = ap.parse_args(argv)
 
     ds_aux = xr.open_dataset(args.aux_path)
@@ -356,6 +385,10 @@ def main(argv=None):
     # Forcings: computed once over the whole ERA5 series (degree days need it).
     forcings, f_keys = process_forcings(args.era5_path, ds_aux)
     f_index = {ym: i for i, ym in enumerate(f_keys)}
+
+    if args.forcings_only:
+        write_forcings_only(forcings, f_keys, args.years, ds_aux, out_dir, args.overwrite)
+        return
 
     nextsim_dir = Path(args.nextsim_dir)
     files = sorted(nextsim_dir.glob("nextsim_opa_icemod_*_monthly.nc"))

@@ -351,3 +351,56 @@ def get_latent_states(
     in_tensor = torch.cat((states_in, forcings_in), dim=-3)
     encoded, latent_mesh, latent_mask = encoder(in_tensor, mesh, mask)
     return encoded, latent_mesh, latent_mask
+
+
+
+def expand_forcing_channels(
+    state_dict: dict,
+    model_state_dict: dict,
+    patch_size: int,
+    n_states: int = 6,
+    n_degree_days: int = 4,
+) -> dict:
+    """
+    Adapt a trained checkpoint to a model with MORE forcing variables per step,
+    so a fine-tune starts from the trained weights and behaves identically.
+
+    The tokenizer input channels are [noisy states, encoded states, forcings(t),
+    forcings(t+1), degree days, ones] (get_latent_states + Tokenizer), each
+    flattened with a patch_size x patch_size patch. New forcing variables must be
+    APPENDED to the forcing list, so their channels sit at the end of the
+    forcings(t) and forcings(t+1) blocks. Their input weights start at zero,
+    which leaves the output unchanged until training teaches the model to use
+    them. The encoder's mean/std buffers are dropped when their size changed, so
+    the model keeps the new statistics from its config. Any other shape change
+    is an error.
+    """
+    p2 = patch_size * patch_size
+    s = 2 * n_states                                     # noisy + encoded states
+    out = {}
+    for key, value in state_dict.items():
+        target = model_state_dict.get(key)
+        if target is None or target.shape == value.shape:
+            out[key] = value
+        elif key.endswith("tokenizer.in_encoder.weight"):
+            c_old, c_new = value.shape[1] // p2 - 1, target.shape[1] // p2 - 1
+            f_old, r_old = divmod(c_old - s - n_degree_days, 2)
+            f_new, r_new = divmod(c_new - s - n_degree_days, 2)
+            if r_old or r_new or not f_new > f_old > 0:
+                raise ValueError(f"cannot map {key}: {tuple(value.shape)} -> {tuple(target.shape)}")
+            old_idx = (list(range(s + f_old))                        # states, forcings(t)
+                       + list(range(s + f_old, s + 2 * f_old))       # forcings(t+1)
+                       + list(range(s + 2 * f_old, c_old + 1)))      # degree days, ones
+            new_idx = (list(range(s + f_old))
+                       + list(range(s + f_new, s + f_new + f_old))
+                       + list(range(s + 2 * f_new, c_new + 1)))
+            w = value.reshape(value.shape[0], c_old + 1, p2)
+            w_new = w.new_zeros(value.shape[0], c_new + 1, p2)
+            w_new[:, new_idx] = w[:, old_idx]
+            out[key] = w_new.reshape(target.shape)
+        elif key in ("encoder.mean", "encoder.std"):
+            continue
+        else:
+            raise ValueError(f"unexpected shape change for {key}: "
+                             f"{tuple(value.shape)} -> {tuple(target.shape)}")
+    return out

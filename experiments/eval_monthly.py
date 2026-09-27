@@ -36,14 +36,20 @@ UNITS = {"sit": "m", "sic": "1", "sid": "1", "siu": "m/s", "siv": "m/s", "snt": 
 
 def load_model(ckpt_path, config, device, train_config):
     cfg = OmegaConf.load(config)
-    # The checkpoint's architecture comes from the train config (e.g. the mac
-    # config shrinks n_features); use it so shapes match.
-    cfg.surrogate.network = OmegaConf.load(train_config).surrogate.network
+    # Architecture and forcing variables come from the run's own saved config
+    # (data/models/<run>/.hydra/config.yaml) when present, else --train-config.
+    run_cfg = os.path.join(os.path.dirname(ckpt_path), ".hydra", "config.yaml")
+    tcfg = OmegaConf.load(run_cfg if os.path.exists(run_cfg) else train_config)
+    cfg.surrogate.network = tcfg.surrogate.network
+    sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)["state_dict"]
+    if "encoder.mean" in sd:  # input normalization exactly as trained
+        cfg.surrogate.encoder.mean = sd["encoder.mean"].flatten().tolist()
+        cfg.surrogate.encoder.std = sd["encoder.std"].flatten().tolist()
     model = instantiate(cfg.surrogate)  # GenSIMForecastModule (recursive)
+    model.forcing_names = list(tcfg.data.get("forcing_variables", FORCINGS))
     gensim.network.USE_FLASH_ATTN = (
         gensim.network.USE_FLASH_ATTN and device.type == "cuda")
 
-    sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)["state_dict"]
     # Prefer the EMA weights (the inference-quality copy); fall back to network.*
     prefix = "ema_model.module." if any(k.startswith("ema_model.module.")
                                         for k in sd) else "network."
@@ -69,6 +75,22 @@ def default_ckpt(ckpt_dir="data/models/monthly"):
     if not cks:
         raise SystemExit(f"no monthly.ckpt or last*.ckpt in {ckpt_dir}")
     return max(cks, key=os.path.getmtime)
+
+
+def model_tag(ckpt):
+    """Short, filesystem-safe model id from a checkpoint path, for naming outputs:
+    monthly.ckpt -> 'monthly'; monthly_pf/last.ckpt -> 'monthly_pf';
+    monthly_pf/step_10000.ckpt -> 'monthly_pf_step_10000'."""
+    import re
+    stem = os.path.splitext(os.path.basename(ckpt))[0]
+    parent = os.path.basename(os.path.dirname(ckpt))
+    if re.match(r"^(last|best)(-v\d+)?$", stem):      # generic Lightning names
+        m = parent
+    elif stem.startswith("step_"):
+        m = f"{parent}_{stem}"
+    else:
+        m = stem
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", m)
 
 
 def load_val_cube(datacube_dir, val_start_year):
@@ -105,7 +127,7 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
     count = 0
     for t in range(n):
         states = rep(torch.as_tensor(arr(t, STATES)[None], device=device, dtype=torch.float32))
-        forc = np.stack([arr(t, FORCINGS), arr(t + 1, FORCINGS)])  # (2,4,H,W)
+        forc = np.stack([arr(t, model.forcing_names), arr(t + 1, model.forcing_names)])  # (2,F,H,W)
         forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
         dd = rep(torch.as_tensor(arr(t, DEGREE)[None], device=device, dtype=torch.float32))
         with torch.no_grad():

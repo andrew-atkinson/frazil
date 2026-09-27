@@ -37,10 +37,12 @@ def ice_area_km2(sic_thw, ocean, cell_area_km2, metric, threshold):
     return (field * ocean * cell_area_km2).sum(axis=(1, 2))
 
 
-def load_nsidc(path, month):
-    """NSIDC monthly extent CSV (10^6 km^2) -> {year: extent_km2} for `month`.
-    `path` is the CSV file or a dir holding N_MM_extent_v*.csv. Skips missing
-    (-9999) values."""
+def load_nsidc(path, month, metric="extent"):
+    """NSIDC monthly Sea Ice Index CSV (10^6 km^2) -> {year: value_km2} for `month`.
+    The file (named ..._extent_...) carries BOTH columns, so read the one matching
+    the model metric: `extent` or `area`. `path` is the CSV or a dir holding
+    N_MM_extent_v*.csv. Skips missing (-9999) values."""
+    col = 5 if metric == "area" else 4   # header: year, mo, source, region, extent, area
     if os.path.isdir(path):
         cand = (glob.glob(f"{path}/[NS]_{month:02d}_extent_v*.csv")
                 or glob.glob(f"{path}/*_{month:02d}_extent*.csv"))
@@ -53,14 +55,14 @@ def load_nsidc(path, month):
         next(fh, None)  # header: year, mo, source_dataset, region, extent, area
         for line in fh:
             p = [c.strip() for c in line.split(",")]
-            if len(p) < 5:
+            if len(p) <= col:
                 continue
             try:
-                yr, ext = int(p[0]), float(p[4])
+                yr, val = int(p[0]), float(p[col])
             except ValueError:
                 continue
-            if ext >= 0:
-                out[yr] = ext * 1e6  # 10^6 km^2 -> km^2
+            if val >= 0:
+                out[yr] = val * 1e6  # 10^6 km^2 -> km^2
     return out
 
 
@@ -98,6 +100,8 @@ def _selfcheck():
                  "1988,  9, X, N, -9999, -9999\n")  # missing year skipped
     d = load_nsidc(p, 9)
     assert d[2024] == 4.35e6 and d[2023] == 4.38e6 and 1988 not in d, d
+    da = load_nsidc(p, 9, "area")               # must read the area column, not extent
+    assert da[2024] == 2.91e6 and da[2023] == 2.83e6, da
     print("[selfcheck] load_nsidc OK")
 
 
@@ -138,6 +142,8 @@ def main(argv=None):
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(11, 4.5))
 
+    plt.grid(color='gray', linestyle='--', linewidth=0.25)
+
     series = {}
     for src, lab in zip(args.sources, labels):
         sic, times = load_sic(src)
@@ -154,10 +160,11 @@ def main(argv=None):
     if args.nsidc:
         if args.month is None:
             raise SystemExit("--nsidc needs --month (NSIDC files are per calendar month)")
-        obs = load_nsidc(args.nsidc, args.month)
+        obs = load_nsidc(args.nsidc, args.month, args.metric)
         oy = sorted(obs)
         odates = [pd.Timestamp(f"{y}-{args.month:02d}-15") for y in oy]
-        ax.plot(odates, [obs[y] for y in oy], "k--s", ms=4, lw=1.6, label=f"NSIDC obs ({len(oy)})")
+        ax.plot(odates, [obs[y] for y in oy], "k--s", ms=4, lw=1.6,
+                label=f"NSIDC {args.metric} ({len(oy)})")
         print(f"[nsidc] {len(oy)} obs years {oy[0]}-{oy[-1]} (pan-Arctic; model is grid-limited)")
         for lab, (t, a) in series.items():
             by = {int(pd.Timestamp(ti).year): ai for ti, ai in zip(t, a)}

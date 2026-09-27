@@ -1,0 +1,97 @@
+# Radiation-channel fine-tune: monthly_pf_qm + ERA5 downward solar (ssrd) and
+# thermal (strd) radiation at the surface, W m-2.
+#
+# Why radiation: summer melt is driven mostly by absorbed sunlight, and monthly
+# air temperature over melting ice sits near 0 C whether the month was sunny or
+# cloudy. Unlike ERA5 SST, radiation depends on clouds and the atmosphere, not
+# directly on the observed ice mask.
+#
+# Seed: monthly_pf_qm (the best model so far), same QM targets + pushforward
+# recipe, 20k more steps. Two changes so the new inputs are actually learned
+# (the SST run's channel reached only 2-5% at inference):
+#   * ema_rate 0.999 (was 0.9999). With ema_update_every 4, the old rate left
+#     61% of the SEED model in the inference weights after 20k steps; 0.999
+#     follows training within a few thousand steps.
+#   * the new channels enter 10x larger (encoder std = data std / 10, recorded
+#     in input_scale). Adam moves each weight by ~lr per step regardless of
+#     scale, so their contribution learns ~10x faster. Their weights start at
+#     zero (expand_forcing_channels), so step 0 == monthly_pf_qm exactly.
+# Stats: ssrd mean 96.3409 std 89.8817; strd mean 259.0685 std 53.1374
+# (1995-2018 ocean, add_forcing_channels.py); inserted after the 4th and 8th forcings.
+#
+# Check at ~10k steps:  python experiments/channel_weights.py data/models/monthly_pf_qm_rad/step_10000.ckpt
+# Attribution after:    freerun hindcast with and without --climatology-forcing ssrd strd.
+#
+# Prereq: build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm_era5x \
+#             --suffix _sicqm_rad --extra-forcings ssrd strd
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py --config-name config_finetune_pf_qm_rad_mac
+defaults:
+  - config_finetune_pushforward_mac
+  - _self_
+
+exp_name: monthly_pf_qm_rad
+init_from: data/models/monthly_pf_qm/last.ckpt
+input_scale: {ssrd: 10, strd: 10}
+
+surrogate:
+  total_steps: 20000
+  pushforward_prob: 0.8
+  pushforward_substeps: 10
+  ema_rate: 0.999
+  network:
+    n_input: 28
+  encoder:
+    mean:
+    - 0.8547
+    - 0.4886
+    - 0.3648
+    - -0.0026
+    - -0.0079
+    - 0.0767
+    - 268.4823
+    - 0.003
+    - 0.4319
+    - -0.3839
+    - 96.3409
+    - 259.0685
+    - 268.4823
+    - 0.003
+    - 0.4319
+    - -0.3839
+    - 96.3409
+    - 259.0685
+    - 3.636
+    - 6.5036
+    - 3.6278
+    - 6.5308
+    std:
+    - 1.0143
+    - 0.4627
+    - 0.4095
+    - 0.0294
+    - 0.0351
+    - 0.1232
+    - 12.3422
+    - 0.0023
+    - 2.3709
+    - 2.2041
+    - 8.9882
+    - 5.3137
+    - 12.3422
+    - 0.0023
+    - 2.3709
+    - 2.2041
+    - 8.9882
+    - 5.3137
+    - 5.0006
+    - 8.946
+    - 4.2851
+    - 5.1714
+
+data:
+  suffix: _sicqm_rad
+  forcing_variables: [tus, huss, uas, vas, ssrd, strd]
+
+trainer:
+  max_steps: 20000

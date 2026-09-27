@@ -107,6 +107,10 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
         main_logger.info(f"Auto-resuming from {last_ckpt}")
     elif ckpt_path is None and cfg.get("init_from"):
         sd = torch.load(cfg.init_from, map_location="cpu")["state_dict"]
+        # More forcing channels than the seed checkpoint -> zero-init the new
+        # input weights (identical behaviour at step 0); no-op otherwise.
+        from gensim.utils import expand_forcing_channels
+        sd = expand_forcing_channels(sd, model.state_dict(), cfg.surrogate.network.patch_size)
         missing, unexpected = model.load_state_dict(sd, strict=False)
         main_logger.info(
             f"Initialised weights from {cfg.init_from} "

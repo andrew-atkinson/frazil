@@ -56,7 +56,7 @@ def year_of(path):
     return int(Path(path).stem.split("_")[-1])
 
 
-def build_split(files, name, out_dir, overwrite, ocean_flat):
+def build_split(files, name, out_dir, overwrite, ocean_flat, var_order=VAR_ORDER):
     """Write a masked datacube: (time, var_names, grid) over ocean points only.
 
     The pipeline stores states/forcings/degree_days as flattened ocean points
@@ -72,7 +72,7 @@ def build_split(files, name, out_dir, overwrite, ocean_flat):
         shutil.rmtree(out_path)
 
     da = xr.open_mfdataset(sorted(files), combine="by_coords")["datacube"]
-    da = da.sel(var_names=VAR_ORDER).fillna(0.0).astype("float32")
+    da = da.sel(var_names=var_order).fillna(0.0).astype("float32")
     da = da.transpose("time", "var_names", "y", "x")
 
     cube = da.values                                  # (time, var, y, x)
@@ -82,7 +82,7 @@ def build_split(files, name, out_dir, overwrite, ocean_flat):
     ds = xr.Dataset(
         {"datacube": (("time", "var_names", "grid"), masked)},
         coords={"time": da["time"].values,
-                "var_names": np.array(VAR_ORDER, dtype="<U12")},
+                "var_names": np.array(var_order, dtype="<U12")},
     ).chunk({"time": 1})
 
     print(f"[{name}] writing {T} months, {V} vars, {masked.shape[-1]} ocean pts "
@@ -130,6 +130,9 @@ def main(argv=None):
     ap.add_argument("--val-start-year", type=int, default=2015)
     ap.add_argument("--aux-path", default="data/auxiliary/ds_auxiliary.nc")
     ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument("--extra-forcings", nargs="*", default=[],
+                    help="extra forcing channels to include (e.g. ssrd strd sst); "
+                         "must exist in the datacube -- see add_forcing_channels.py")
     ap.add_argument("--no-verify", action="store_true")
     args = ap.parse_args(argv)
 
@@ -147,10 +150,11 @@ def main(argv=None):
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    var_order = STATES + FORCINGS + list(args.extra_forcings) + DEGREE
     train_path = build_split(train_files, f"train{args.suffix}", out_dir,
-                             args.overwrite, ocean_flat)
+                             args.overwrite, ocean_flat, var_order)
     val_path = build_split(val_files, f"validation{args.suffix}", out_dir,
-                           args.overwrite, ocean_flat)
+                           args.overwrite, ocean_flat, var_order)
 
     if not args.no_verify:
         print("\n[verify]")
