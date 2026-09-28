@@ -2,7 +2,7 @@
 
 Command-by-command reference for the monthly sea-ice pipeline: download → preprocess → train → evaluate → project. Every script is a plain `python <script>.py` with `--flags` (except `train.py`, which is Hydra-driven, and `download/era5.py`, which is Hydra-driven). Defaults are shown so most commands run with no arguments at all.
 
-- **Environment:** activate the project env first (e.g. `conda activate gensim`). All the model scripts set `PYTORCH_ENABLE_MPS_FALLBACK=1` and auto-detect the device (Apple-Silicon **MPS**, else CPU; CUDA if present).
+- **Environment:** activate the project env first (e.g. `conda activate frazil`). All the model scripts set `PYTORCH_ENABLE_MPS_FALLBACK=1` and auto-detect the device (Apple-Silicon **MPS**, else CPU; CUDA if present).
 - **Run from the repo root** (`seaIce/gensim/`) — default paths are relative to it.
 - **Making figures & animations?** See the dedicated guide **[docs/VISUALS.md](VISUALS.md)** (maps, plots, and the decadal shrinking-ice movie, end to end).
 - **Lost in the moving parts?** **[docs/STATUS.md](STATUS.md)** maps the whole pipeline, what works / is parked, the two models, and the filename scheme. `python experiments/results_report.py` tabulates every run from the ledger.
@@ -367,7 +367,7 @@ python experiments/freerun_monthly.py --forcing era5 --start 2018-12 --years 7 -
 | `--out-dir` | `plots/freerun` | outputs (csv, diagnostics png, map, snapshots/) |
 | `--snapshot-every` | `12` | save the full spatial state every N months (0=off); final always saved |
 | `--no-map` | off | skip the final-state map figure |
-| `--save-members` | off | with each snapshot also write every member's `sic` (`members_YYYYMM.nc`) — for `ensemble_summaries.py`. The CSV always logs both extents: of the averaged field (`ice_area_km2`) and each member's own, averaged (`ext_members_km2`, the unbiased number) |
+| `--save-members [VAR ...]` | off | with each snapshot also write every member's fields (`members_YYYYMM.nc`): `sic` alone by default, or e.g. `--save-members sic sit` for thickness frames too — for `ensemble_summaries.py`. The CSV always logs both extents: of the averaged field (`ice_area_km2`) and each member's own, averaged (`ext_members_km2`, the unbiased number) |
 | `--climatology-forcing` | none | `era5` only: replace the named forcing channels (e.g. `sst`) with their 1995–2014 calendar-month mean — a leak test: if skill collapses without the year-specific values, the model was reading them rather than learning physics. Output tagged `_clim-<vars>` |
 
 **Outputs:** `freerun_<forcing>.csv` (diagnostics), `freerun_<forcing>.png` (4-panel diagnostics), `freerun_<forcing>_map.png` (6-variable map of the final month), and `snapshots/<model>_<forcing>/state_YYYYMM.nc` (full spatial states — what maps/animations are built from, namespaced by checkpoint+forcing so runs never overwrite each other; `era5` runs also carry the start year, e.g. `monthly_pf_era5_2018`; the run prints the exact folder). With a January start, `--snapshot-every 12` lands on winter maxima; use `--snapshot-every 1` (or `--start 2015-09`) to capture the September minimum for a shrinking-ice animation.
@@ -417,7 +417,7 @@ python experiments/animate_snapshots.py --selfcheck                # test frame 
 
 > For the decadal shrinking-ice animation: run the projection with `--snapshot-every 1` (every month saved), then `--var sic --month 9` for the summer minimum over the century. `.gif` needs only pillow; `.mp4` needs ffmpeg.
 
-**Frame type (`--summary`).** `mean` (default) reads `state_*.nc`, the smooth ensemble mean that smears the ice edge. `pmm` (probability-matched mean: the mean's pattern with the members' sharp values) and `member` (one realization; pick it with `--member K`) read `members_*.nc`, so they need a run made with `--save-members` and work for `--var sic` only.
+**Frame type (`--summary`).** `mean` (default) reads `state_*.nc`, the smooth ensemble mean that smears the ice edge. `pmm` (probability-matched mean: the mean's pattern with the members' sharp values) and `member` (one realization; pick it with `--member K`) read `members_*.nc`, so they need a run made with `--save-members`, and only for the variables it saved (`sic` by default; `--save-members sic sit` adds thickness).
 
 ### `experiments/channel_weights.py` — is a new input being learned?
 Per-channel norm of the first layer's weights (training and EMA copies) as a % of the median original forcing. Run it on a mid-run `step_*.ckpt` before committing to a full training run: a new channel stuck at a few % isn't being used. Honours a run's `input_scale`.
@@ -543,7 +543,7 @@ Each record (one JSON line in `results/experiments.jsonl`) carries: UTC timestam
 # End-to-end, from scratch
 
 ```bash
-conda activate gensim
+conda activate frazil
 
 # 1. data
 python download/nextsim.py

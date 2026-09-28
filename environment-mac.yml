@@ -8,7 +8,7 @@
 #     falls back to torch.scaled_dot_product_attention on these machines.
 #
 # Create with:  conda env create -f environment-mac.yml
-name: gensim
+name: frazil
 channels:
   - conda-forge
 dependencies:

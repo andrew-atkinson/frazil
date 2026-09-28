@@ -13,7 +13,8 @@ Frames can be the ensemble MEAN (state_*.nc; smooth, but it smears the ice edge
 where members disagree), the probability-matched mean (--summary pmm: the mean's
 pattern with the members' sharp values) or one member (--summary member: a
 single physically consistent realization with real texture). pmm/member read
-members_*.nc (sic only) from a run made with freerun_monthly.py --save-members.
+members_*.nc from a run made with freerun_monthly.py --save-members (sic by
+default; add sit etc. with --save-members sic sit).
 
 Run:  python experiments/animate_snapshots.py --var sic --month 9
       python experiments/animate_snapshots.py --var sic --month 9 --summary pmm
@@ -72,7 +73,8 @@ def main(argv=None):
     ap.add_argument("--vmin", type=float, default=None, help="override colour scale")
     ap.add_argument("--vmax", type=float, default=None)
     ap.add_argument("--summary", default="mean", choices=["mean", "pmm", "member"],
-                    help="mean: state_*.nc; pmm / member: from members_*.nc (sic only)")
+                    help="mean: state_*.nc; pmm / member: from members_*.nc (the variables "
+                         "the run saved with --save-members)")
     ap.add_argument("--member", type=int, default=0, help="which member for --summary member")
     ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args(argv)
@@ -93,15 +95,17 @@ def main(argv=None):
             fields.append(ds.sel(var_names=args.var).values.astype(np.float32))
             dates.append(pd.Timestamp(ds["time"].values))
     else:
-        if args.var != "sic":
-            raise SystemExit("--summary pmm/member needs --var sic (members files hold sic only)")
         files = sorted(glob.glob(f"{args.snap_dir}/members_*.nc"))
         if not files:
             raise SystemExit(f"no members_*.nc in {args.snap_dir} "
                              "(run freerun_monthly.py with --save-members)")
         from ensemble_summaries import pmm
         for f in files:
-            mem = np.nan_to_num(xr.open_dataset(f)["sic"].values).astype(np.float32)
+            ds = xr.open_dataset(f)
+            if args.var not in ds:
+                raise SystemExit(f"{os.path.basename(f)} holds {list(ds.data_vars)}, not {args.var}: "
+                                 f"re-run freerun_monthly.py with --save-members sic {args.var}")
+            mem = np.nan_to_num(ds[args.var].values).astype(np.float32)
             fields.append(pmm(mem, ocean) if args.summary == "pmm" else mem[args.member])
             ym = os.path.basename(f)[-9:-3]
             dates.append(pd.Timestamp(f"{ym[:4]}-{ym[4:]}-01"))

@@ -84,9 +84,10 @@ def main(argv=None):
                     help="era5 only: replace these forcing channels (e.g. sst) with their "
                          "1995-2014 calendar-month mean, removing year-specific information "
                          "(e.g. the observed-ice imprint in ERA5 SST). Tagged '_clim-<vars>'.")
-    ap.add_argument("--save-members", action="store_true",
-                    help="with each snapshot also write every member's sic "
-                         "(members_YYYYMM.nc, dims member,y,x) for ensemble-summary studies")
+    ap.add_argument("--save-members", nargs="*", default=None, metavar="VAR",
+                    help="with each snapshot also write every member's fields "
+                         "(members_YYYYMM.nc, dims member,y,x). No VAR = sic only; "
+                         "e.g. --save-members sic sit for thickness frames too")
     ap.add_argument("--note", default="", help="annotation stored with the logged result")
     ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
@@ -272,10 +273,12 @@ def main(argv=None):
                                     or k + 1 == nsteps or last_nonfinite):
             save_state(sm, last_date, os.path.join(
                 snap_dir, f"state_{last_date:%Y%m}.nc"))
-            if args.save_members:
-                xr.DataArray(sic_m, dims=("member", "y", "x"), name="sic").to_netcdf(
+            if args.save_members is not None:
+                mvars = args.save_members or ["sic"]
+                xr.Dataset({v: (("member", "y", "x"), state[:, E.STATES.index(v)].cpu().numpy())
+                            for v in mvars}).to_netcdf(
                     os.path.join(snap_dir, f"members_{last_date:%Y%m}.nc"),
-                    encoding={"sic": {"zlib": True, "complevel": 4}})
+                    encoding={v: {"zlib": True, "complevel": 4} for v in mvars})
         if last_nonfinite:
             print(f"\n[freerun] non-finite at year {d['year']:.2f} -- stopping"); break
 

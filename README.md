@@ -16,7 +16,7 @@
 ```bash
 git clone https://github.com/andrew-atkinson/frazil.git
 cd frazil
-conda env create -f environment-mac.yml && conda activate gensim && pip install -e .
+conda env create -f environment-mac.yml && conda activate frazil && pip install -e .
 ```
 
 (`environment.yml` is GenSIM's original CUDA environment.)
@@ -28,7 +28,7 @@ A lightweight adaptation of GenSIM that runs and trains on a laptop (Apple Silic
 **Environment.** Use `environment-mac.yml` (drops the CUDA-only PyTorch wheel and flash-attn; MPS build works out of the box):
 
 ```bash
-conda env create -f environment-mac.yml && conda activate gensim && pip install -e .
+conda env create -f environment-mac.yml && conda activate frazil && pip install -e .
 ```
 
 `inference_demo.ipynb` auto-detects the device (CUDA → MPS → CPU) and casts to float32 (MPS has no float64), so it runs unchanged on a Mac.
