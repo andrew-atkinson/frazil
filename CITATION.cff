@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it and the GenSIM model it is based on (see references)."
+title: "Frazil: a laptop-scale monthly Arctic sea-ice model based on GenSIM"
+type: software
+authors:
+  - family-names: Atkinson
+    given-names: Andrew
+repository-code: "https://github.com/andrew-atkinson/frazil"
+license: MIT
+version: 0.1.0
+references:
+  - type: article
+    title: "Generative AI models capture realistic sea-ice evolution from days to decades"
+    authors:
+      - family-names: Finn
+        given-names: Tobias Sebastian
+      - family-names: Bocquet
+        given-names: Marc
+      - family-names: Rampal
+        given-names: Pierre
+      - family-names: Durand
+        given-names: Charlotte
+      - family-names: Porro
+        given-names: Flavia
+      - family-names: Farchi
+        given-names: Alban
+      - family-names: Carrassi
+        given-names: Alberto
+    year: 2025
+    doi: 10.48550/arXiv.2508.14984
+    url: "https://arxiv.org/abs/2508.14984"
+  - type: software
+    title: "GenSIM"
+    authors:
+      - family-names: Finn
+        given-names: Tobias Sebastian
+    repository-code: "https://github.com/cerea-daml/gensim"
+    license: MIT

@@ -1,59 +1,25 @@
+# Frazil
 
+**A small, laptop-trainable model of monthly Arctic sea ice, made for art–science collaboration.** It captures the large-scale seasonal advance and retreat of the ice and its decline under a warming scenario, rather than the fine 12-hour dynamics of the model it grew out of.
 
-> ### A small, laptop-scale sea-ice model — for art–science collaboration
-> This project is built on a clone of [GenSIM](https://github.com/cerea-daml/gensim) (not a GitHub fork). It repurposes GenSIM's generative approach toward a different goal: a **small model, trainable on a laptop, that captures the broad monthly evolution of Arctic sea ice** — the large-scale seasonal advance and retreat, rather than the fine 12-hour dynamics the original resolves. It was made for **art–science collaboration**, where legible, broad-strokes change is the point. Practical guide and honest limits in **[The monthly model](#the-monthly-model)**; the rest of this README is the original GenSIM documentation.
+> **Based on [GenSIM](https://github.com/cerea-daml/gensim)**, the generative sea-ice model by Tobias Sebastian Finn, Marc Bocquet, Pierre Rampal, Charlotte Durand, Flavia Porro, Alban Farchi and Alberto Carrassi ([preprint](https://arxiv.org/abs/2508.14984)), released under the MIT licence. This is an **independent, unofficial adaptation**. It is not affiliated with or endorsed by the GenSIM authors, so please raise questions and issues about it here, not in the GenSIM repository. The original documentation is kept in [docs/ORIGINAL_GENSIM.md](docs/ORIGINAL_GENSIM.md).
 
-## Repository Structure
+## How this differs from GenSIM
 
-``` 
-data/
-├─ auxiliary – Auxiliary data contained in the repository
-├── ds_auxiliary.nc - Auxiliary data file (grid cells, mask)
-├── ds_demo.nc - Demo dataset (available at https://doi.org/10.5281/zenodo.17535317)
-├─ models - The pre-trained model checkpoints (available at https://huggingface.co/tobifinn/GenSIM)
-├─ train_data – Zarr training data (not contained in the repository and has to be linked. How to get data please see notebooks/data/)
-
-gensim/
-├─ augmentation.py – data augmentation (flips, rotations, patch generation)
-├─ data_module.py – LightningDataModule for training/validation datasets
-├─ dataset.py – PyTorch Dataset that reads Zarr data
-├─ deterministic_network.py – U-Net architecture used as reference for a deterministic model
-├─ embedding.py – random‑Fourier embeddings and Embedder
-├─ encoder_decoder.py – Encoder and Decoder to map to physical space
-├─ forecast_module.py – Lightweight PyTorch module for inference
-├─ network.py – Transformer architecture (tokenizer, attention, skips)
-├─ sampler.py – Flow‑matching sampler with schedule and second‑order update
-├─ train_module.py – LightningModule for training with EMA model support
-├─ utils.py – helper functions (masking, averaging, param grouping)
-└─ wrapper.py – PatchedNetwork wrapper for forecasting with domain decomposition
-
-notebooks/ – Jupyter notebooks to reproduce key results from the manuscript
-├─ data/ – Jupyter notebooks for data preprocessing and analysis
-
-config_train.yaml – Training configuration for GenSIMTrainModule
-config_forecast.yaml – Forecasting configuration for GenSIMForecastModule
-environment.yml – Conda environment definition
-setup.py – Package installation script
-train.py – Entry point for training (Hydra CLI)
-LICENSE – MIT license
-README.md – This file
-```
+- **Monthly, not 12-hourly.** Retrained from scratch at a one-month step on monthly neXtSIM-OPA targets and ERA5 forcing, as a much smaller model that trains on a laptop (Apple Silicon / MPS).
+- **Same core.** The `gensim/` package keeps GenSIM's flow-matching Transformer and training code, with the bug fixes listed under *Core bug fixes* below.
+- **New around it:** downloaders and preprocessing for monthly data, pushforward (drift) fine-tuning, quantile-mapped targets, extra forcing channels, an out-of-sample hindcast against observations, ensemble summaries and animation tools (`download/`, `experiments/`, `docs/`).
+- **Different purpose.** Its results are not comparable to GenSIM's published skill; see *Limitations* below.
 
 ## Installation
 
 ```bash
-git clone https://github.com/cerea-daml/gensim.git
-cd gensim
-conda env create -f environment.yml
-conda activate gensim
-pip install -e .
+git clone https://github.com/andrew-atkinson/frazil.git
+cd frazil
+conda env create -f environment-mac.yml && conda activate gensim && pip install -e .
 ```
 
-Verify installation:
-
-```bash
-python -c "import gensim; print(gensim.__version__)"
-```
+(`environment.yml` is GenSIM's original CUDA environment.)
 
 ## The monthly model
 
@@ -156,102 +122,17 @@ This is a **coarse, exploratory, from-scratch experiment**, not a drop-in upgrad
 - **Data coverage.** neXtSIM-OPA exists only for **1995–2018**, so all training and neXtSIM-based validation stays in that window. Beyond it, models are scored against observations only: NSIDC over 2019–25, under real ERA5 weather.
 - **Not the intended scale.** Real training belongs on CUDA (the base config targets 8 GPUs); the Mac path trades model size and speed for portability.
 
-## Data Preprocessing
+## Credits and data
 
-The `notebooks/` folder contains Jupyter notebooks that walk through the full data preparation pipeline required for training and inference:
+This project stands on GenSIM and on openly shared data: the **neXtSIM-OPA** simulation (Boutin et al., 2023), **ERA5** (Copernicus Climate Change Service), **NSIDC** passive-microwave observations, and **CMIP6** MPI-ESM1-2-LR output. Several of these make citation a condition of use. Full citations, the subsets used, and a suggested credit line for exhibitions are in **[CREDITS.md](CREDITS.md)**. No data is included in this repository.
 
-- `data_01_get_auxiliary.ipynb` – Downloads and prepares auxiliary NetCDF data.
-- `data_02_nextsim_to_zarr.ipynb` – Converts neXtSIM output to Zarr format.
-- `data_03_split_parts.ipynb` – Splits the Zarr dataset into training and validation parts.
-- `data_04_estimate_normalization.ipynb` – Estimates and stores dataset normalization statistics.
+## Licence
 
-<u>It is important to process the data in the **exact order** shown above to ensure the model receives correctly formatted inputs.</u>
+MIT (see [LICENSE](LICENSE)). The GenSIM code is © 2025 Tobias Finn; the adaptation and additions are © 2026 Andrew Atkinson.
 
-## Module Architecture
+## Citing
 
-GenSIM provides two specialized modules for different use cases:
-
-### GenSIMTrainModule (`gensim/train_module.py`)
-- **Purpose**: Training with PyTorch Lightning
-- **Features**:
-  - Full training logic with loss computation
-  - EMA (Exponential Moving Average) model support
-  - Optimizer and scheduler configuration
-  - Validation and logging capabilities
-- **Use case**: Model training and development
-
-### GenSIMForecastModule (`gensim/forecast_module.py`)
-- **Purpose**: Lightweight inference
-- **Features**:
-  - Minimal overhead for fast predictions
-  - No training-specific components
-  - Direct PyTorch module instantiation
-  - Optimized for deployment
-- **Use case**: Production inference and forecasting
-
-## Configuration
-
-The configuration is split into two files:
-
-- [`config_train.yaml`](config_train.yaml) – Training configuration for GenSIMTrainModule
-- [`config_forecast.yaml`](config_forecast.yaml) – Forecasting configuration for GenSIMForecastModule
-
-Key sections:
-
-- `trainer` – Lightning trainer settings (accelerator, devices, precision, max_steps).
-- `surrogate.network` – Transformer architecture (n_input, n_output, n_features, n_blocks, etc.).
-- `surrogate.encoder` / `decoder` – Encoder/decoder parameters.
-- `surrogate.sampler` – Number of steps and schedule parameters for flow matching sampler.
-- `surrogate.train_augmentation` – Settings for data augmentation.
-- `data` – Paths to data, batch size, number of workers.
-
-You can override any entry from the command line, e.g.:
-
-```bash
-python train.py trainer.max_steps=500000 exp_name=my_exp
-```
-
-## Training
-
-Ensure the `data/train_data` folder contains the required Zarr files (`train.zarr`, `validation.zarr`) and the auxiliary NetCDF (`auxiliary/ds_auxiliary.nc`).
-
-```bash
-python train.py
-```
-
-The script logs progress with a tqdm bar, saves checkpoints under `data/models/<exp_name>/`, and (offline) logs to Weights & Biases as configured in `config.yaml`.
-
-To resume training set `ckpt_path` in `config.yaml` to the desired checkpoint.
-
-## Inference
-
-For inference with this repository, we provide pre-trained model checkpoints via [`HuggingFace`](https://huggingface.co/tobifinn/GenSIM). The model checkpoints define the weights of the neural network and are available in two different versions: either as exponential moving average (`model_weights_ema.safetensors`) or as raw weights (`model_weights.safetensors`). To avoid a contamination of the weights with malicious data, the model weights are stored in the [`safetensors`](https://huggingface.co/docs/safetensors/en/index) format.
-
-A [`jupyter notebook `](inference_demo.ipynb) is included to showcase prediction steps with GenSIM over a demo dataset. To use the notebook, ensure the demo dataset `data/auxiliary/ds_demo.nc` is downloaded from [`Zenodo`](https://doi.org/10.5281/zenodo.17535317). The inference demo initialises GenSIM, loads its checkpoint, and makes ensemble predictions of up to four days. These predictions are then compared to a persistence forecast and the targetted neXtSIM-OPA simulation. The code used in the inference notebook can be also used as starting step for other usage.
-
-## Data Layout
-
-Sea‑ice state variables: `sit` (thickness) `sic` (concentration) `sid` (damage) `siu` (x-drift) `siv` (y-drift) `snt` (snow)
-
-Forcing variables:
-| CMIP   | var meaning                        | maps to                                        |
-|--------|------------------------------------|------------------------------------------------|
-| `tas`  | near-surface (2 m) air temperature | tus + the 4 degree-day features (rolling sums) |
-| `huss` | near-surface specific humidity     | huss (direct — skip the ERA5 humidity math)    |
-| `uas`  | eastward near-surface wind         | uas (after rotation to the grid)               |
-| `vas`  | northward near-surface wind        | vas (after rotation)                           |
-
-The Zarr file contains a `datacube` array with dimensions `[time, variable, y, x]` and a `var_names` attribute.
-
-The auxiliary NetCDF provides `mask`, `x_coord`, `y_coord`.
-
-## License
-
-This project is released under the MIT License (see `LICENSE`).
-
-## Citation
-
-If you use GenSIM, please cite the following preprint until publication:
+If you use this project, please cite it (see [CITATION.cff](CITATION.cff), or GitHub's *Cite this repository*) **and** GenSIM:
 
 ```bibtex
 @article{finn_preprint_2025,
@@ -266,15 +147,3 @@ If you use GenSIM, please cite the following preprint until publication:
     month=nov
 }
 ```
-
-## GenSIM – Generative Sea‑Ice Model
-
-The official implementation of **GenSIM**, a generative sea-ice model to learn sea-ice dynamics with neural networks and flow matching is found here:
-
-[![Demo](https://img.shields.io/badge/Demo-Colab-F9AB00?style=flat&logo=googlecolab&color=%23F9AB00)](https://colab.research.google.com/drive/1R3KPE4okFUGRcomI97RODO8IJAZHELJM?usp=sharing) [![HuggingFace](https://img.shields.io/badge/Model-HuggingFace-FFD21E?style=flat&logo=huggingface)](https://huggingface.co/tobifinn/GenSIM) [![Preprint](https://img.shields.io/badge/Preprint-ArXiv-B31B1B?style=flat&logo=arxiv)](https://arxiv.org/abs/2508.14984) ![Website](https://img.shields.io/badge/Website-Stay_Tuned-lightblue?style=flat) ![Version](https://img.shields.io/badge/Version-1.0-blue?style=flat)
-
-## Contact
-
-Tobias Sebastian Finn – tobias.finn@enpc.fr
-
-*End of README*
