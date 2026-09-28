@@ -197,4 +197,6 @@ data/
 !data/auxilliary/.gitkeep
 
 plots/
-results/
+# Results ledger (experiments.jsonl) and its report are versioned; the
+# per-run code snapshots are local provenance only.
+results/patches/
