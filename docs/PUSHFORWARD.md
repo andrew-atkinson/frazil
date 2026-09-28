@@ -14,7 +14,7 @@ The model learns to pull its own imperfect states back toward truth. Gradients f
 ## Run it
 
 ```bash
-python train.py --config-name config_finetune_pushforward_mac
+python train.py +experiment=pushforward
 ```
 
 That's the whole command. It:
@@ -57,9 +57,9 @@ Compare the fine-tuned model against the original on the free-running metrics th
 
 ```bash
 # skill vs lead (should hold up better at long lead)
-python experiments/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt
+python scripts/evaluate/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt
 # 15-yr cyclic drift (sharpness / area should stay stable at least as well)
-python experiments/freerun_monthly.py --years 15 --fast --ckpt data/models/monthly_pf/last.ckpt
+python scripts/project/freerun_monthly.py --years 15 --fast --ckpt data/models/monthly_pf/last.ckpt
 ```
 
 `train/pushforward` in `data/models/monthly_pf/metrics.csv` logs the fraction of steps that used the pushforward path, and `train/loss` / `val/loss` track training as usual (remember flow-matching NLL doesn't go to zero — judge by skill, not loss).
@@ -98,4 +98,4 @@ Better sharpness retention (smooths toward mush less) and slightly less area/mea
 - `gensim/dataset.py` — returns per-frame degree-days (so the 2nd transition has its forcing). The one-step path slices frame 0, unchanged.
 - `gensim/train_module.py` — `pushforward*` params, a stateless `pf_sampler`, a no_grad `_generate_next`, and a `_select_batch` that swaps in the generated state. Adds nothing to the checkpoint (the sampler holds no parameters).
 - `train.py` — auto-resume from `last.ckpt` + `init_from` weight seeding.
-- `config_finetune_pushforward_mac.yaml` — inherits the mac config, flips on pushforward and the 3-frame window.
+- `configs/experiment/pushforward.yaml` — inherits the mac config, flips on pushforward and the 3-frame window.

@@ -1,6 +1,6 @@
 # Original GenSIM README
 
-> **Archived for reference.** This is the README of [GenSIM](https://github.com/cerea-daml/gensim) by Tobias Sebastian Finn and co-authors (MIT licence), exactly as published in the upstream repository at commit `dfa2563` (2025-11-27). The only change: three relative links are prefixed with `../` so they still resolve from `docs/`. Its instructions (clone URL, pre-trained weights, demo, contact) refer to **the original project**, not to this adaptation. See the [main README](../README.md) for this project.
+> **Archived for reference.** This is the README of [GenSIM](https://github.com/cerea-daml/gensim) by Tobias Sebastian Finn and co-authors (MIT licence), exactly as published in the upstream repository at commit `dfa2563` (2025-11-27). The only change: three relative links are adjusted so they still resolve from `docs/` (the two config files now live in `configs/`). Its instructions (clone URL, pre-trained weights, demo, contact) refer to **the original project**, not to this adaptation. See the [main README](../README.md) for this project.
 
 ---
 
@@ -103,8 +103,8 @@ GenSIM provides two specialized modules for different use cases:
 
 The configuration is split into two files:
 
-- [`config_train.yaml`](../config_train.yaml) – Training configuration for GenSIMTrainModule
-- [`config_forecast.yaml`](../config_forecast.yaml) – Forecasting configuration for GenSIMForecastModule
+- [`config_train.yaml`](../configs/config_train.yaml) – Training configuration for GenSIMTrainModule
+- [`config_forecast.yaml`](../configs/config_forecast.yaml) – Forecasting configuration for GenSIMForecastModule
 
 Key sections:
 

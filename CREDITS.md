@@ -1,6 +1,6 @@
 # Credits
 
-Frazil is an adaptation of other people's work. This file lists what it is built on, how each source asks to be cited, and the part of each dataset this project uses. None of the data is included in the repository; the scripts in `download/` fetch it from the providers. Several providers make citation **a condition of use**, and that applies to anything made with this project, including published animations and trained models.
+Frazil is an adaptation of other people's work. This file lists what it is built on, how each source asks to be cited, and the part of each dataset this project uses. None of the data is included in the repository; the scripts in `scripts/download/` fetch it from the providers. Several providers make citation **a condition of use**, and that applies to anything made with this project, including published animations and trained models.
 
 ## Software
 

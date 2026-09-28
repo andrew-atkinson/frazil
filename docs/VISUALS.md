@@ -16,7 +16,7 @@ All commands run from the repo root with the `gensim` env active. Figures land i
 | Ice extent / area over time (+ obs) | `ice_area.py` | time series |
 | Skill vs lead | `rollout_monthly.py` | time series |
 | Drift diagnostics (area, sharpness, bounds) | `freerun_monthly.py` (`.png`) | time series |
-| Skill vs training step | `sweep_skill_monthly.py` | time series |
+| Skill vs training step | `archive/sweep_skill_monthly.py` (archived) | time series |
 | **Animation (GIF/MP4)** | `animate_snapshots.py` | movie |
 | Spatial state files the maps/movies read | `freerun_monthly.py --snapshot-every` | data (`.nc`) |
 
@@ -28,7 +28,7 @@ All commands run from the repo root with the `gensim` env active. Figures land i
 Predicts one validation month and draws, per variable, a row of **truth \| GenSIM \| persistence**. The visual "does the forecast look like reality" check (validation window only — it needs truth).
 
 ```bash
-python experiments/predict_monthly.py --target-year 2018 --target-month 9 --n-ens 8
+python scripts/evaluate/predict_monthly.py --target-year 2018 --target-month 9 --n-ens 8
 # -> plots/forecast_maps.png
 ```
 
@@ -36,7 +36,7 @@ python experiments/predict_monthly.py --target-year 2018 --target-month 9 --n-en
 Every `freerun` writes a 6-panel map (`sit sic sid siu siv snt`) of its **last** month, land masked:
 
 ```bash
-python experiments/freerun_monthly.py --forcing cmip --years 80 --fast
+python scripts/project/freerun_monthly.py --forcing cmip --years 80 --fast
 # -> plots/freerun/freerun_cmip_map.png  (state at 2095-01)
 ```
 
@@ -73,7 +73,7 @@ The headline "shrinking ice" line chart. Overlays multiple sources and NSIDC obs
 
 ```bash
 # truth vs a projection, September minimum, against observations
-python experiments/ice_area.py data/train_data/monthly_datacube plots/freerun/snapshots \
+python scripts/evaluate/ice_area.py data/train_data/monthly_datacube plots/freerun/snapshots \
     --month 9 --nsidc data/obs/nsidc --out plots/ice_area_sept.png
 ```
 `--metric extent` (SIC>0.15, the standard) or `--metric area` (SIC-weighted); `--csv` also dumps the numbers.
@@ -82,7 +82,7 @@ python experiments/ice_area.py data/train_data/monthly_datacube plots/freerun/sn
 Two panels: RMSE vs lead, and skill vs climatology (solid) & persistence (dashed).
 
 ```bash
-python experiments/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt \
+python scripts/evaluate/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt \
     --out-png plots/rollout_pf.png
 ```
 
@@ -90,14 +90,11 @@ python experiments/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.
 The 4-panel self-consistency figure (domain-mean state, ice area, sharpness/ spectral-collapse, physical bounds) — how a free run behaves over years:
 
 ```bash
-python experiments/freerun_monthly.py --years 15 --fast   # -> plots/freerun/freerun_cyclic.png
+python scripts/project/freerun_monthly.py --years 15 --fast   # -> plots/freerun/freerun_cyclic.png
 ```
 
-### Skill vs training step — `sweep_skill_monthly.py`
-How skill improved during training (cached to CSV):
-```bash
-python experiments/sweep_skill_monthly.py   # -> plots/skill_vs_step.png
-```
+### Skill vs training step (archived)
+The sweep script is in `archive/`; it predates the `configs/` layout and may need updating before it runs again.
 
 ---
 
@@ -109,7 +106,7 @@ Animations are built from **snapshots**, so the workflow is always two steps: **
 Snapshots come from any `freerun`. For a smooth movie you want **every month**:
 
 ```bash
-python experiments/freerun_monthly.py --forcing cmip --years 80 --fast --snapshot-every 1 \
+python scripts/project/freerun_monthly.py --forcing cmip --years 80 --fast --snapshot-every 1 \
     --ckpt data/models/monthly_pf/last.ckpt
 # -> plots/freerun/snapshots/monthly_pf_cmip/state_YYYYMM.nc   (960 files ~27 GB; see note)
 ```
@@ -118,11 +115,11 @@ Snapshots are **namespaced by model + forcing** (`snapshots/<model>_<forcing>/`)
 ### Step (b): make the movie
 ```bash
 # September ice minimum, one frame per year (the shrinking-cap movie)
-python experiments/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
+python scripts/project/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
     --var sic --month 9 --out plots/ice_sept.mp4 --fps 8
 
 # every month: seasonal pulse + long-term decline together
-python experiments/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
+python scripts/project/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
     --var sic --out plots/ice_monthly.mp4 --fps 12
 ```
 Point `--snap-dir` at the namespaced folder the freerun printed.
@@ -152,11 +149,11 @@ End to end, from a trained checkpoint to a September-minimum MP4:
 
 ```bash
 # 1. project 80 years on bias-corrected CMIP forcing, saving every month
-python experiments/freerun_monthly.py --forcing cmip --years 80 --fast --snapshot-every 1 \
+python scripts/project/freerun_monthly.py --forcing cmip --years 80 --fast --snapshot-every 1 \
     --ckpt data/models/monthly_pf/last.ckpt
 
 # 2. animate the September ice cap, fixed 0-1 scale, high-res MP4
-python experiments/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
+python scripts/project/animate_snapshots.py --snap-dir plots/freerun/snapshots/monthly_pf_cmip \
     --var sic --month 9 --vmin 0 --vmax 1 --dpi 200 --fps 8 --out plots/ice_cap_2015-2095.mp4
 ```
 

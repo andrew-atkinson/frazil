@@ -25,7 +25,7 @@ This supersedes the "drift ~+0.5, fix with pushforward + QM" conclusion below. E
 
 **Candidate model-level fix:** give the emulator an ocean signal. ERA5 has monthly sea-surface temperature for 1994–2025, so the same download path works. Add it as an input channel, with its weights initialised to zero so the model starts identical to today's, then fine-tune. Test with the same out-of-sample hindcast and sector table.
 
-**Ensemble summaries (for the animation).** `experiments/ensemble_summaries.py` compares ways to turn 8 members into one field (84 months, 2019–25). July–September, vs obs:
+**Ensemble summaries (for the animation).** `scripts/evaluate/ensemble_summaries.py` compares ways to turn 8 members into one field (84 months, 2019–25). July–September, vs obs:
 
 | method | extent bias | IIEE (edge error) | partial-ice (15–80%) band bias | RMSE | sharpness (obs = 1) |
 | --- | --- | --- | --- | --- | --- |
@@ -113,10 +113,10 @@ Only worth doing after a stronger pushforward run, and only if a residual target
 ### Prereqs already built
 
 - `data/train_data/monthly_datacube_sicqm/`, `train_sicqm.zarr`, `validation_sicqm.zarr` — QM targets, training-ready.
-- `config_finetune_sicqm_mac.yaml` — the fine-tune config (edit lr/EMA/steps for A).
+- `configs/experiment/sicqm.yaml` — the fine-tune config (edit lr/EMA/steps for A).
 - `data/models/monthly_qm/last.ckpt` — the weak fine-tune, baseline to beat.
-- `experiments/freerun_monthly.py --forcing era5` — the ERA5 hindcast path (added 2026-09-22); re-run it against any new model to re-measure the drift term.
-- `experiments/correct_sic_targets_qm.py`, `qm_calibrate_poc.py` — the correction and its proof-of-concept.
+- `scripts/project/freerun_monthly.py --forcing era5` — the ERA5 hindcast path (added 2026-09-22); re-run it against any new model to re-measure the drift term.
+- `scripts/data/correct_sic_targets_qm.py` and `archive/qm_calibrate_poc.py` — the correction and its proof-of-concept.
 
 ## What not to do
 
