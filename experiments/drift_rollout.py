@@ -65,7 +65,7 @@ def select_device(name: str):
     return torch.device("cpu")
 
 
-def load_model(device, model_path, config_name="config_forecast.yaml"):
+def load_model(device, model_path, config_name="configs/config_forecast.yaml"):
     """Instantiate GenSIM, load EMA weights, move to device. Mirrors the demo."""
     import torch
     from hydra import compose, initialize

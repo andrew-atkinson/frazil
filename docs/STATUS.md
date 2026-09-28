@@ -14,12 +14,12 @@ nextsim.py  (targets) preprocess_monthly.py  \
 era5.py     (forcing) estimate_normalization  > monthly_datacube > zarr > train.py > monthly.ckpt
                       build_zarr_monthly.py   /                                        |
                                                                                        v
-                                              config_finetune_pushforward  >  monthly_pf/last.ckpt
+                                              experiment/pushforward       >  monthly_pf/last.ckpt
 cmip.py      > preprocess_cmip.py (bias-correct vs ERA5)  > cmip_datacube  ------------.
 nsidc.py     > (extent CSV, obs baseline)                                              |
 nsidc0051.py > preprocess_nsidc0051.py > nsidc0051_grid  (validation / sic-bias)       |
                                                                                        v
-   EVALUATE:  eval_monthly (one-step) · rollout_monthly (vs lead) · sweep_skill (vs step)
+   EVALUATE:  eval_monthly (one-step) · rollout_monthly (vs lead)
    PROJECT:   freerun_monthly (snapshots + drift) · extend_snapshots · ensemble_extent
    VISUALISE: predict_monthly (maps) · animate_snapshots (movies) · ice_area (extent vs obs)
 ```

@@ -14,7 +14,7 @@ through untouched. Cells with no valid observation are left as-is.
 
 Then feed the corrected datacube to the training prep + a fine-tune:
     build_zarr_monthly.py --datacube-dir <out> --suffix _sicqm
-    train.py --config-name config_finetune_sicqm_mac
+    train.py +experiment=sicqm
 
 Run:  python experiments/correct_sic_targets_qm.py --selfcheck
       python experiments/correct_sic_targets_qm.py
@@ -140,7 +140,7 @@ def main(argv=None):
     print("next: python experiments/estimate_normalization_monthly.py "
           f"--datacube '{args.out_dir}/monthly_datacube_*.nc' --no-configs")
     print(f"      python experiments/build_zarr_monthly.py --datacube-dir {args.out_dir} --suffix _sicqm")
-    print("      python train.py --config-name config_finetune_sicqm_mac")
+    print("      python train.py +experiment=sicqm")
 
 
 if __name__ == "__main__":

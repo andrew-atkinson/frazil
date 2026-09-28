@@ -133,8 +133,8 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
-    ap.add_argument("--config", default="config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
+    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
+    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
     ap.add_argument("--val-start-year", type=int, default=2015)

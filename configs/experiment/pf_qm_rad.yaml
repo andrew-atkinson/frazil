@@ -1,3 +1,4 @@
+# @package _global_
 # Radiation-channel fine-tune: monthly_pf_qm + ERA5 downward solar (ssrd) and
 # thermal (strd) radiation at the surface, W m-2.
 #
@@ -25,9 +26,9 @@
 # Prereq: build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm_era5x \
 #             --suffix _sicqm_rad --extra-forcings ssrd strd
 # RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
-# Run:  python train.py --config-name config_finetune_pf_qm_rad_mac
+# Run:  python train.py +experiment=pf_qm_rad
 defaults:
-  - config_finetune_pushforward_mac
+  - pushforward
   - _self_
 
 exp_name: monthly_pf_qm_rad

@@ -32,8 +32,8 @@ mean/std over time and ocean cells, ddof=1.
 Outputs
 -------
   * prints the stat vectors,
-  * writes experiments/normalization_monthly.json,
-  * writes config_train_monthly.yaml and config_forecast_monthly.yaml with the
+  * writes results/normalization_monthly.json,
+  * writes configs/config_train_monthly.yaml and configs/config_forecast_monthly.yaml with the
     encoder/decoder mean/std replaced (architecture and bounds untouched).
 """
 from __future__ import annotations
@@ -123,7 +123,7 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--datacube",
                     default="data/train_data/monthly_datacube/monthly_datacube_*.nc")
-    ap.add_argument("--out-json", default="experiments/normalization_monthly.json")
+    ap.add_argument("--out-json", default="results/normalization_monthly.json")
     ap.add_argument("--no-configs", action="store_true",
                     help="only compute/print stats, don't write monthly configs")
     args = ap.parse_args(argv)
@@ -152,8 +152,8 @@ def main(argv=None):
     print(f"\n[json] wrote {args.out_json}")
 
     if not args.no_configs:
-        wire_config("config_train.yaml", "config_train_monthly.yaml", stats)
-        wire_config("config_forecast.yaml", "config_forecast_monthly.yaml", stats)
+        wire_config("configs/config_train.yaml", "configs/config_train_monthly.yaml", stats)
+        wire_config("configs/config_forecast.yaml", "configs/config_forecast_monthly.yaml", stats)
 
 
 if __name__ == "__main__":

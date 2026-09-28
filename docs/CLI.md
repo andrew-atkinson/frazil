@@ -19,7 +19,7 @@ download/era5.py  ───┼─▶ preprocess_monthly.py ─▶ data/train_dat
 download/cmip.py ────┴─▶ preprocess_cmip.py ────▶ data/train_data/cmip_datacube/       │
                           (regrid + BIAS-CORRECT)  (future forcing, 2015-2100)          │
                                                                                         ▼
-   eval_monthly.py · predict_monthly.py · rollout_monthly.py · sweep_skill_monthly.py   (skill / maps)
+   eval_monthly.py · predict_monthly.py · rollout_monthly.py   (skill / maps)
    freerun_monthly.py                                                                   (decadal projection)
 ```
 
@@ -232,11 +232,11 @@ It prints each year's September extent — cross-check against NSIDC's number (`
 # 3 · Train
 
 ### `train.py` — train the monthly model (Hydra)
-Hydra-driven (`config_name='config_train'`, `config_path='.'`). On Apple Silicon use the Mac config, which shrinks the network (`n_features=256`, `n_blocks=4`), sets `accelerator: mps`, `precision: 32`, and writes checkpoints to `data/models/monthly/`.
+Hydra-driven. Configs live in `configs/`; the default is the Mac config `config_train_monthly_mac`, which shrinks the network (`n_features=256`, `n_blocks=4`), sets `accelerator: mps`, `precision: 32`, and writes checkpoints to `data/models/monthly/`.
 
 ```bash
-python train.py --config-name config_train_monthly_mac          # train on Mac/MPS
-python train.py --config-name config_train_monthly_mac ckpt_path=data/models/monthly/monthly.ckpt   # resume
+python train.py                                                  # train on Mac/MPS (default config)
+python train.py ckpt_path=data/models/monthly/monthly.ckpt       # resume
 ```
 Override any config value inline, Hydra-style: `key=value` (e.g. `surrogate.optimizer.lr=1e-4`). Checkpoints rotate as `last.ckpt`, `last-v1.ckpt`, … ; the trained model is consolidated to `monthly.ckpt` (see *Checkpoints* below).
 
@@ -244,32 +244,11 @@ Override any config value inline, Hydra-style: `key=value` (e.g. `surrogate.opti
 
 **Pushforward (rollout) fine-tune** — teach the model to correct its own free-running drift, resumable in short bursts:
 ```bash
-python train.py --config-name config_finetune_pushforward_mac
+python train.py +experiment=pushforward
 ```
-Starts from `monthly.ckpt`, writes to `data/models/monthly_pf/`. Full guide, knobs, and cost in **[docs/PUSHFORWARD.md](PUSHFORWARD.md)**.
+Starts from `monthly.ckpt`, writes to `data/models/monthly_pf/`. Every fine-tune is a recipe in `configs/experiment/` applied on top of the base config (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`); run one with `python train.py +experiment=<name>`. Full guide, knobs, and cost in **[docs/PUSHFORWARD.md](PUSHFORWARD.md)**.
 
-### `experiments/smoke_train_monthly.py` — training smoke test
-Runs a handful of steps to confirm the training loop, data, and device all work before committing to a full run.
-
-```bash
-python experiments/smoke_train_monthly.py
-```
-| Flag | Default | Meaning |
-|---|---|---|
-| `--config` | `config_train_monthly.yaml` | training config to smoke-test |
-| `--seed` | `0` | RNG seed |
-
-### `experiments/ab_optimizer_monthly.py` — optimizer A/B micro-benchmark
-Short comparison run (loss-vs-steps) to sanity-check optimizer settings.
-
-| Flag | Default | Meaning |
-|---|---|---|
-| `--steps` | `200` | steps per variant |
-| `--batch-size` | `2` | batch size |
-| `--cpu` | off | force CPU |
-| `--out-png` | `experiments/ab_optimizer.png` | output figure |
-
----
+> Training smoke tests, the optimizer A/B and the skill-vs-step sweep are archived in [archive/](../archive/README.md).
 
 # 4 · Evaluate & forecast (validation window, has truth)
 
@@ -284,8 +263,8 @@ python experiments/eval_monthly.py --n-ens 8
 | Flag | Default | Meaning |
 |---|---|---|
 | `--ckpt` | `monthly.ckpt` | checkpoint (auto-resolved if omitted) |
-| `--config` | `config_forecast_monthly.yaml` | forecast/inference config |
-| `--train-config` | `config_train_monthly_mac.yaml` | architecture the ckpt was trained with |
+| `--config` | `configs/config_forecast_monthly.yaml` | forecast/inference config |
+| `--train-config` | `configs/config_train_monthly_mac.yaml` | architecture the ckpt was trained with |
 | `--datacube` | `data/train_data/monthly_datacube` | states + forcing |
 | `--aux` | `data/auxiliary/ds_auxiliary.nc` | grid + mask |
 | `--val-start-year` | `2015` | first validation year |
@@ -324,23 +303,6 @@ python experiments/rollout_monthly.py --fast --starts 2015-01,2016-01,2017-01   
 | `--out-png` | `plots/rollout_multistart.png` | figure; a `.csv` is written alongside |
 
 Output tables carry an `n` column = starts averaged at that lead (drops at long lead when only early starts reach it).
-
-### `experiments/sweep_skill_monthly.py` — skill vs training step
-Evaluates checkpoints at roughly every `--interval` steps to show how skill improved during training. Caches to CSV so it isn't recomputed.
-
-```bash
-python experiments/sweep_skill_monthly.py
-```
-| Flag | Default | Meaning |
-|---|---|---|
-| `--ckpt-dir` | `data/models/monthly` | directory of checkpoints |
-| `--config` / `--train-config` / `--datacube` / `--aux` | as above | — |
-| `--interval` | `25000` | evaluate a checkpoint near every N steps |
-| `--max-pairs` | `12` | month-pairs per checkpoint (speed) |
-| `--out-csv` | `plots/skill_vs_step.csv` | cache/output CSV |
-| `--out-png` | `plots/skill_vs_step.png` | output figure |
-
----
 
 # 5 · Decadal projection (past 2018 — no truth)
 
@@ -461,7 +423,7 @@ python experiments/ice_area.py plots/freerun/snapshots --month 9 --metric area -
 > The offset it prints (`model − NSIDC`, M km²) is the anchor correction: NSIDC is pan-Arctic while the model is grid-limited, so treat it as a bias estimate, not an exact accounting.
 
 ### `experiments/drift_rollout.py` — original demo-model drift
-Long free-running rollout for the **original 12-hour demo model** (safetensors weights, `config_forecast.yaml`, 3.5-day cyclic forcing) — not the monthly model. Kept for the demo; the monthly analogue is `freerun_monthly.py`.
+Long free-running rollout for the **original 12-hour demo model** (safetensors weights, `configs/config_forecast.yaml`, 3.5-day cyclic forcing) — not the monthly model. Kept for the demo; the monthly analogue is `freerun_monthly.py`.
 
 ```bash
 python experiments/drift_rollout.py --n-steps 120                 # ~60 simulated days
@@ -557,7 +519,7 @@ python experiments/build_zarr_monthly.py               # pack train/validation z
 python experiments/preprocess_cmip.py          # optional: bias-corrected future forcing
 
 # 3. train (Apple Silicon)
-python train.py --config-name config_train_monthly_mac
+python train.py
 
 # 4. evaluate
 python experiments/eval_monthly.py --n-ens 8

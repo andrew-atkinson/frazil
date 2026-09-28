@@ -113,10 +113,10 @@ Only worth doing after a stronger pushforward run, and only if a residual target
 ### Prereqs already built
 
 - `data/train_data/monthly_datacube_sicqm/`, `train_sicqm.zarr`, `validation_sicqm.zarr` — QM targets, training-ready.
-- `config_finetune_sicqm_mac.yaml` — the fine-tune config (edit lr/EMA/steps for A).
+- `configs/experiment/sicqm.yaml` — the fine-tune config (edit lr/EMA/steps for A).
 - `data/models/monthly_qm/last.ckpt` — the weak fine-tune, baseline to beat.
 - `experiments/freerun_monthly.py --forcing era5` — the ERA5 hindcast path (added 2026-09-22); re-run it against any new model to re-measure the drift term.
-- `experiments/correct_sic_targets_qm.py`, `qm_calibrate_poc.py` — the correction and its proof-of-concept.
+- `experiments/correct_sic_targets_qm.py` and `archive/qm_calibrate_poc.py` — the correction and its proof-of-concept.
 
 ## What not to do
 

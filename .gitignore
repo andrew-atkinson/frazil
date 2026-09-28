@@ -200,3 +200,7 @@ plots/
 # Results ledger (experiments.jsonl) and its report are versioned; the
 # per-run code snapshots are local provenance only.
 results/patches/
+
+# Personal tooling (code search / assistant config), not part of the project
+.mcp.json
+.ignore

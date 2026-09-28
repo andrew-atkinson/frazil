@@ -1,6 +1,7 @@
+# @package _global_
 # Pushforward (rollout) fine-tune of the monthly model, for Apple Silicon.
 #
-# Inherits config_train_monthly_mac.yaml and overrides only what pushforward
+# Applied on top of the base config (configs/config_train_monthly_mac.yaml) and overrides only what pushforward
 # needs. Starts from the trained monthly.ckpt and teaches the model to correct
 # its own free-running drift (see docs/PUSHFORWARD.md).
 #
@@ -10,10 +11,7 @@
 # time; nothing is lost past the last checkpoint (written every 500 steps and on
 # validation).
 #
-# Run:  python train.py --config-name config_finetune_pushforward_mac
-defaults:
-  - config_train_monthly_mac
-  - _self_
+# Run:  python train.py +experiment=pushforward
 
 exp_name: monthly_pf
 init_from: data/models/monthly/monthly.ckpt   # weights to seed the fine-tune (first launch only)

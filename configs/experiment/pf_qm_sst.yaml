@@ -1,3 +1,4 @@
+# @package _global_
 # SST-channel fine-tune: the monthly_pf_qm recipe + ERA5 sea-surface temperature.
 #
 # A/B partner: monthly_pf_qm (identical: seed monthly_pf, QM targets, pushforward
@@ -19,9 +20,9 @@
 #   build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm_era5x \
 #       --suffix _sicqm_sst --extra-forcings sst
 # RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
-# Run:  python train.py --config-name config_finetune_pf_qm_sst_mac
+# Run:  python train.py +experiment=pf_qm_sst
 defaults:
-  - config_finetune_pushforward_mac
+  - pushforward
   - _self_
 
 exp_name: monthly_pf_qm_sst

@@ -17,7 +17,7 @@ apart, so the time axis must be a single continuous monthly sequence.
   consecutive-month pairs (t, t+1) -- one-month-ahead prediction. (The original
   6-hourly setup used delta_t=2 to make a 12 h step.) This matches the
   `shift(time=-1)` used for the decoder tendency stats. Set delta_t=1 in the
-  data-module config (done in config_train_monthly.yaml by this repo's setup).
+  data-module config (done in configs/config_train_monthly.yaml by this repo's setup).
 
 Key format requirements (verified against the code):
   * zarr **v2** -- NeXtSIMDataset reads the datacube through tensorstore with

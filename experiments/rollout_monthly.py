@@ -54,8 +54,8 @@ def build_climatology(datacube_dir, before_year):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
-    ap.add_argument("--config", default="config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
+    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
+    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
     ap.add_argument("--starts", default="2015-01,2015-04,2015-07,2015-10",

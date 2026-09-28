@@ -5,10 +5,17 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ## [Unreleased]
 
 ### Changed
-- Repository housekeeping in progress on `chore/housekeeping` (see ISS-016).
+- Configs moved from the root into `configs/`. `train.py` now defaults to the Mac monthly config, so `python train.py` trains the base model.
+- The four fine-tunes are Hydra experiment recipes in `configs/experiment/` (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`), run with `python train.py +experiment=<name>`. Each composes to exactly the same config as before.
+- Script defaults, the demo notebook and the docs point to `configs/`; `normalization_monthly.json` moved to `results/`.
 
 ### Added
 - `CHANGELOG.md`, `docs/ISSUES.md` and `CONTRIBUTING.md` (branch workflow).
+- `archive/` with a README for finished one-off tools.
+
+### Removed
+- Personal tooling config (`.mcp.json`, `.ignore`) from version control; still ignored locally.
+- One-off tools moved to `archive/`: optimizer A/B, training smoke/minimal/watch runs, `loss_graph.py`, skill-vs-step sweep, the QM proof of concept, and the mean-shift `sic` correction.
 
 ## [0.1.0] — 2026-09-27
 

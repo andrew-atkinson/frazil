@@ -42,18 +42,20 @@ python download/era5.py --years 1994-2018   # ERA5 monthly forcing (1994 = degre
 # (for climate-scenario forcing instead of ERA5: python download/cmip.py, see download/notes.md)
 # 2. regrid + rotate onto the GenSIM grid, derive humidity/degree-days
 python experiments/preprocess_monthly.py           # -> data/train_data/monthly_datacube/
-# 3. normalization stats -> config_train_monthly.yaml
+# 3. normalization stats -> configs/config_train_monthly.yaml
 python experiments/estimate_normalization_monthly.py
 # 4. pack masked train/validation zarr (delta_t=1 = one-month step)
 python experiments/build_zarr_monthly.py
-# 5. train (config_train_monthly_mac.yaml = ~3.8M-param model tuned for a laptop GPU)
-python train.py --config-name config_train_monthly_mac
+# 5. train (default config: configs/config_train_monthly_mac.yaml, a ~3.8M-param model tuned for a laptop GPU)
+python train.py
+# fine-tunes are recipes in configs/experiment/, e.g.:
+python train.py +experiment=pf_qm_rad
 ```
 
 **Stop/resume.** Lightning writes `data/models/<exp_name>/last.ckpt` every 500 steps; resume with:
 
 ```bash
-python train.py --config-name config_train_monthly_mac ckpt_path=data/models/monthly/last.ckpt
+python train.py ckpt_path=data/models/monthly/last.ckpt
 ```
 
 **Evaluation & forecasting** (all reuse `experiments/eval_monthly.py`'s checkpoint loader; scores are computed against the neXtSIM-OPA truth over the held-out validation months 2015–2018, with **persistence** — "next month = this month" — as the baseline):
@@ -62,10 +64,9 @@ python train.py --config-name config_train_monthly_mac ckpt_path=data/models/mon
 python experiments/eval_monthly.py        # one-month-ahead RMSE + skill vs persistence
 python experiments/predict_monthly.py     # plot forecast maps: truth | GenSIM | persistence
 python experiments/rollout_monthly.py     # free-running autoregressive rollout, error vs lead
-python experiments/sweep_skill_monthly.py # skill-vs-training-step curve (cached, post-hoc)
 ```
 
-Other `experiments/` helpers: `smoke_train_monthly.py` / `minimal_train_monthly.py` (config + shape checks), `train_watch_monthly.py` (live loss curve), and `ab_optimizer_monthly.py` (the optimizer A/B below).
+Finished one-off tools (training smoke tests, the optimizer A/B, the skill-vs-step sweep, the QM proof of concept) are kept in [archive/](archive/README.md).
 
 ### Data inputs
 

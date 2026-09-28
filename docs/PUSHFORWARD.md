@@ -14,7 +14,7 @@ The model learns to pull its own imperfect states back toward truth. Gradients f
 ## Run it
 
 ```bash
-python train.py --config-name config_finetune_pushforward_mac
+python train.py +experiment=pushforward
 ```
 
 That's the whole command. It:
@@ -98,4 +98,4 @@ Better sharpness retention (smooths toward mush less) and slightly less area/mea
 - `gensim/dataset.py` — returns per-frame degree-days (so the 2nd transition has its forcing). The one-step path slices frame 0, unchanged.
 - `gensim/train_module.py` — `pushforward*` params, a stateless `pf_sampler`, a no_grad `_generate_next`, and a `_select_batch` that swaps in the generated state. Adds nothing to the checkpoint (the sampler holds no parameters).
 - `train.py` — auto-resume from `last.ckpt` + `init_from` weight seeding.
-- `config_finetune_pushforward_mac.yaml` — inherits the mac config, flips on pushforward and the 3-frame window.
+- `configs/experiment/pushforward.yaml` — inherits the mac config, flips on pushforward and the 3-frame window.

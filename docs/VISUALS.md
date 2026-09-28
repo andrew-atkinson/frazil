@@ -16,7 +16,7 @@ All commands run from the repo root with the `gensim` env active. Figures land i
 | Ice extent / area over time (+ obs) | `ice_area.py` | time series |
 | Skill vs lead | `rollout_monthly.py` | time series |
 | Drift diagnostics (area, sharpness, bounds) | `freerun_monthly.py` (`.png`) | time series |
-| Skill vs training step | `sweep_skill_monthly.py` | time series |
+| Skill vs training step | `archive/sweep_skill_monthly.py` (archived) | time series |
 | **Animation (GIF/MP4)** | `animate_snapshots.py` | movie |
 | Spatial state files the maps/movies read | `freerun_monthly.py --snapshot-every` | data (`.nc`) |
 
@@ -93,11 +93,8 @@ The 4-panel self-consistency figure (domain-mean state, ice area, sharpness/ spe
 python experiments/freerun_monthly.py --years 15 --fast   # -> plots/freerun/freerun_cyclic.png
 ```
 
-### Skill vs training step — `sweep_skill_monthly.py`
-How skill improved during training (cached to CSV):
-```bash
-python experiments/sweep_skill_monthly.py   # -> plots/skill_vs_step.png
-```
+### Skill vs training step (archived)
+The sweep script is in `archive/`; it predates the `configs/` layout and may need updating before it runs again.
 
 ---
 

@@ -59,8 +59,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--ckpt", default=None)
-    ap.add_argument("--config", default="config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="config_train_monthly_mac.yaml")
+    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
+    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
     ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
     ap.add_argument("--cmip-datacube", default="data/train_data/cmip_datacube")
     ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
