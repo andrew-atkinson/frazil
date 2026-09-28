@@ -25,7 +25,7 @@ nsidc0051.py > preprocess_nsidc0051.py > nsidc0051_grid  (validation / sic-bias)
 ```
 
 Everything a run produces is recorded in **`results/experiments.jsonl`**; see it
-tabulated with `python experiments/results_report.py` (→ `results/REPORT.md`).
+tabulated with `python scripts/evaluate/results_report.py` (→ `results/REPORT.md`).
 
 ## What works (proven, with honest numbers)
 

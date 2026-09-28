@@ -13,8 +13,8 @@
 # RESUMABLE: re-run the same command; it auto-continues from
 #   data/models/monthly_qm/last.ckpt
 #
-# Prereq:  python experiments/correct_sic_targets_qm.py
-#          python experiments/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm --suffix _sicqm
+# Prereq:  python scripts/data/correct_sic_targets_qm.py
+#          python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm --suffix _sicqm
 # Run:     python train.py +experiment=sicqm
 
 exp_name: monthly_qm

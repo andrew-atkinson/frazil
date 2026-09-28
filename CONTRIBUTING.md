@@ -34,6 +34,7 @@ One logical change per commit, message as `type: what changed` (`add:`, `update:
 
 - **Changes:** add a line under *Unreleased* in [CHANGELOG.md](CHANGELOG.md) in the same branch as the change.
 - **Issues:** new problems and ideas go in [docs/ISSUES.md](docs/ISSUES.md) with the next ID; close them there when fixed.
+- **Experiments:** each gets a folder in [experiments/](experiments/README.md) (copy `_template.md`) and a line in its index; training recipes go in `configs/experiment/`.
 - **Results:** runs log themselves to `results/experiments.jsonl` with the code fingerprint; pass `--note` so the report says what each run was.
 - **Releases:** when `main` reaches a milestone, move *Unreleased* under a version and tag it: `git tag -a v0.2.0 -m "..." && git push --tags`.
 

@@ -8,7 +8,7 @@
 
 - **Monthly, not 12-hourly.** Retrained from scratch at a one-month step on monthly neXtSIM-OPA targets and ERA5 forcing, as a much smaller model that trains on a laptop (Apple Silicon / MPS).
 - **Same core.** The `gensim/` package keeps GenSIM's flow-matching Transformer and training code, with the bug fixes listed under *Core bug fixes* below.
-- **New around it:** downloaders and preprocessing for monthly data, pushforward (drift) fine-tuning, quantile-mapped targets, extra forcing channels, an out-of-sample hindcast against observations, ensemble summaries and animation tools (`download/`, `experiments/`, `docs/`).
+- **New around it:** downloaders and preprocessing for monthly data, pushforward (drift) fine-tuning, quantile-mapped targets, extra forcing channels, an out-of-sample hindcast against observations, ensemble summaries and animation tools (`scripts/`, `frazil/`, `docs/`).
 - **Different purpose.** Its results are not comparable to GenSIM's published skill; see *Limitations* below.
 
 ## Installation
@@ -20,6 +20,20 @@ conda env create -f environment-mac.yml && conda activate frazil && pip install 
 ```
 
 (`environment.yml` is GenSIM's original CUDA environment.)
+
+## Repository layout
+
+```
+configs/            Hydra configs: base training/forecast configs; experiment/ holds one recipe per fine-tune
+experiments/        lab notebook: one folder per experiment (question, recipe, commands, results, conclusion)
+frazil/             shared code the scripts import (model loading, preprocessing, diagnostics, ensemble summaries, ledger)
+gensim/             GenSIM's model code, unchanged apart from the documented bug fixes
+scripts/            command-line tools by stage: download/ -> data/ -> evaluate/ -> project/ -> figures/
+train.py            training entry point (python train.py [+experiment=<name>])
+results/            experiment ledger and generated report (versioned)
+archive/            finished one-off tools, kept for the record
+data/, plots/       datasets, checkpoints and figures (never committed)
+```
 
 ## The monthly model
 
@@ -33,19 +47,19 @@ conda env create -f environment-mac.yml && conda activate frazil && pip install 
 
 `inference_demo.ipynb` auto-detects the device (CUDA → MPS → CPU) and casts to float32 (MPS has no float64), so it runs unchanged on a Mac.
 
-**Monthly retraining pipeline** (downloaders in `download/`, pipeline in `experiments/`; run all from the repo root):
+**Monthly retraining pipeline** (downloaders in `scripts/download/`, the rest in `scripts/`; run everything from the repo root):
 
 ```bash
 # 1. download targets (neXtSIM-OPA, 1995–2018) and forcing (ERA5 monthly, needs ~/.cdsapirc)
-python download/nextsim.py     # -> data/train_data/nextsim_opa_monthly/
-python download/era5.py --years 1994-2018   # ERA5 monthly forcing (1994 = degree-day spin-up)
-# (for climate-scenario forcing instead of ERA5: python download/cmip.py, see download/notes.md)
+python scripts/download/nextsim.py     # -> data/train_data/nextsim_opa_monthly/
+python scripts/download/era5.py --years 1994-2018   # ERA5 monthly forcing (1994 = degree-day spin-up)
+# (for climate-scenario forcing instead of ERA5: python scripts/download/cmip.py, see scripts/download/notes.md)
 # 2. regrid + rotate onto the GenSIM grid, derive humidity/degree-days
-python experiments/preprocess_monthly.py           # -> data/train_data/monthly_datacube/
+python scripts/data/preprocess_monthly.py           # -> data/train_data/monthly_datacube/
 # 3. normalization stats -> configs/config_train_monthly.yaml
-python experiments/estimate_normalization_monthly.py
+python scripts/data/estimate_normalization_monthly.py
 # 4. pack masked train/validation zarr (delta_t=1 = one-month step)
-python experiments/build_zarr_monthly.py
+python scripts/data/build_zarr_monthly.py
 # 5. train (default config: configs/config_train_monthly_mac.yaml, a ~3.8M-param model tuned for a laptop GPU)
 python train.py
 # fine-tunes are recipes in configs/experiment/, e.g.:
@@ -58,12 +72,12 @@ python train.py +experiment=pf_qm_rad
 python train.py ckpt_path=data/models/monthly/last.ckpt
 ```
 
-**Evaluation & forecasting** (all reuse `experiments/eval_monthly.py`'s checkpoint loader; scores are computed against the neXtSIM-OPA truth over the held-out validation months 2015–2018, with **persistence** — "next month = this month" — as the baseline):
+**Evaluation & forecasting** (all reuse `scripts/evaluate/eval_monthly.py`'s checkpoint loader; scores are computed against the neXtSIM-OPA truth over the held-out validation months 2015–2018, with **persistence** — "next month = this month" — as the baseline):
 
 ```bash
-python experiments/eval_monthly.py        # one-month-ahead RMSE + skill vs persistence
-python experiments/predict_monthly.py     # plot forecast maps: truth | GenSIM | persistence
-python experiments/rollout_monthly.py     # free-running autoregressive rollout, error vs lead
+python scripts/evaluate/eval_monthly.py        # one-month-ahead RMSE + skill vs persistence
+python scripts/evaluate/predict_monthly.py     # plot forecast maps: truth | GenSIM | persistence
+python scripts/evaluate/rollout_monthly.py     # free-running autoregressive rollout, error vs lead
 ```
 
 Finished one-off tools (training smoke tests, the optimizer A/B, the skill-vs-step sweep, the QM proof of concept) are kept in [archive/](archive/README.md).
@@ -84,21 +98,21 @@ Finished one-off tools (training smoke tests, the optimizer A/B, the skill-vs-st
 | **NSIDC-0051** passive-microwave sea-ice concentration, regridded to the model grid | 1995–2025 | observations | Indirect: fits the QM targets (to 2018) and scores the 2019–25 hindcast. |
 | **NSIDC Sea Ice Index** v4 extent/area, all 12 months | 1979–2025 | observations | Evaluation only (`ice_area.py --nsidc`). |
 
-Train 1995–2014 (240 months), validate 2015–2018 (48 months), test out-of-sample 2019–2025 against NSIDC. Two caveats: ERA5 *prescribes* SST and sea ice from satellite analyses, so its SST under the observed ice is fixed at 271.46 K (nearly the observed ice mask), and its air temperature carries a weaker imprint of the same ice. Every dataset's role, paths and weight are in **[docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)**; the figure is `experiments/plot_data_timeline.py`.
+Train 1995–2014 (240 months), validate 2015–2018 (48 months), test out-of-sample 2019–2025 against NSIDC. Two caveats: ERA5 *prescribes* SST and sea ice from satellite analyses, so its SST under the observed ice is fixed at 271.46 K (nearly the observed ice mask), and its air temperature carries a weaker imprint of the same ice. Every dataset's role, paths and weight are in **[docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)**; the figure is `scripts/figures/plot_data_timeline.py`.
 
 Getting the additional inputs (NSIDC-0051 needs an Earthdata login in `~/.netrc` or `EARTHDATA_TOKEN` — never in the repo):
 
 ```bash
-python download/nsidc.py --month 0                          # Sea Ice Index, all 12 months
-python download/nsidc0051.py                                # gridded concentration 1995-2025
-python experiments/preprocess_nsidc0051.py                  # -> data/obs/nsidc0051_grid/
-python experiments/correct_sic_targets_qm.py                # QM targets -> monthly_datacube_sicqm/
-python download/era5.py --years 2018-2025                   # ERA5 extension
-python experiments/preprocess_monthly.py --forcings-only --years 2019 2020 2021 2022 2023 2024 2025 \
+python scripts/download/nsidc.py --month 0                          # Sea Ice Index, all 12 months
+python scripts/download/nsidc0051.py                                # gridded concentration 1995-2025
+python scripts/data/preprocess_nsidc0051.py                  # -> data/obs/nsidc0051_grid/
+python scripts/data/correct_sic_targets_qm.py                # QM targets -> monthly_datacube_sicqm/
+python scripts/download/era5.py --years 2018-2025                   # ERA5 extension
+python scripts/data/preprocess_monthly.py --forcings-only --years 2019 2020 2021 2022 2023 2024 2025 \
   --era5-path data/train_data/era5_2018_2025/data_stream-moda_stepType-avgua.nc \
   --out-dir data/train_data/era5_forcing_datacube
-python download/era5.py --extra --years 1995-2025           # SST + downward solar/thermal radiation
-python experiments/add_forcing_channels.py --datacube-dir data/train_data/monthly_datacube_sicqm   # (and the other cubes)
+python scripts/download/era5.py --extra --years 1995-2025           # SST + downward solar/thermal radiation
+python scripts/data/add_forcing_channels.py --datacube-dir data/train_data/monthly_datacube_sicqm   # (and the other cubes)
 ```
 
 > **Full CLI reference:** every script's flags, defaults, outputs, and the decadal-projection tools (`freerun_monthly.py`, bias-corrected CMIP forcing) are documented in **[docs/CLI.md](docs/CLI.md)**.

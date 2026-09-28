@@ -9,13 +9,20 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 - The four fine-tunes are Hydra experiment recipes in `configs/experiment/` (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`), run with `python train.py +experiment=<name>`. Each composes to exactly the same config as before.
 - Script defaults, the demo notebook and the docs point to `configs/`; `normalization_monthly.json` moved to `results/`.
 
+- Scripts moved out of `experiments/` into `scripts/` by stage (`download/`, `data/`, `evaluate/`, `project/`, `figures/`), keeping their names. Every command's path changes: `python scripts/<stage>/<name>.py`.
+- Shared code moved into a new `frazil/` package (`models`, `preprocess`, `diagnostics`, `ensemble`, `io`, `ledger`), installed with `pip install -e .`; scripts no longer import each other through `sys.path`. Re-running the 2018 forcing through the moved code is bit-identical to the training data.
+- The results ledger is `frazil/ledger.py` (`python -m frazil.ledger show`).
+- `experiments/` is now the lab notebook: one folder per experiment with a write-up, an index and a template.
+
 ### Added
 - `CHANGELOG.md`, `docs/ISSUES.md` and `CONTRIBUTING.md` (branch workflow).
+- `scripts/evaluate/ensemble_size.py` and the [ensemble-size experiment](experiments/2026-09-28_ensemble_size/): averaging removes only the random part of the error (15% in summer); 4 members give ~85% of the 8-member gain; the plain mean's edge worsens with size, PMM's doesn't.
+- A repository-layout section in the README.
 - `archive/` with a README for finished one-off tools.
 
 ### Removed
 - Personal tooling config (`.mcp.json`, `.ignore`) from version control; still ignored locally.
-- One-off tools moved to `archive/`: optimizer A/B, training smoke/minimal/watch runs, `loss_graph.py`, skill-vs-step sweep, the QM proof of concept, and the mean-shift `sic` correction.
+- One-off tools moved to `archive/`: optimizer A/B, training smoke/minimal/watch runs, `loss_graph.py`, skill-vs-step sweep, the QM proof of concept, the mean-shift `sic` correction, and the original 12-hour drift experiment (`drift_rollout.py`).
 
 ## [0.1.0] — 2026-09-27
 

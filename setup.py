@@ -13,7 +13,7 @@ setup(
     # package "gensim" on PyPI); the import package stays `gensim`.
     name='frazil',
     packages=find_packages(
-        include=["gensim"]
+        include=["gensim", "frazil"]
     ),
     version='0.1.0',
     description='Unofficial monthly adaptation of the GenSIM sea-ice model (Finn et al., 2025)',

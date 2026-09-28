@@ -20,7 +20,7 @@
 # Stats: ssrd mean 96.3409 std 89.8817; strd mean 259.0685 std 53.1374
 # (1995-2018 ocean, add_forcing_channels.py); inserted after the 4th and 8th forcings.
 #
-# Check at ~10k steps:  python experiments/channel_weights.py data/models/monthly_pf_qm_rad/step_10000.ckpt
+# Check at ~10k steps:  python scripts/evaluate/channel_weights.py data/models/monthly_pf_qm_rad/step_10000.ckpt
 # Attribution after:    freerun hindcast with and without --climatology-forcing ssrd strd.
 #
 # Prereq: build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm_era5x \

@@ -57,9 +57,9 @@ Compare the fine-tuned model against the original on the free-running metrics th
 
 ```bash
 # skill vs lead (should hold up better at long lead)
-python experiments/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt
+python scripts/evaluate/rollout_monthly.py --fast --ckpt data/models/monthly_pf/last.ckpt
 # 15-yr cyclic drift (sharpness / area should stay stable at least as well)
-python experiments/freerun_monthly.py --years 15 --fast --ckpt data/models/monthly_pf/last.ckpt
+python scripts/project/freerun_monthly.py --years 15 --fast --ckpt data/models/monthly_pf/last.ckpt
 ```
 
 `train/pushforward` in `data/models/monthly_pf/metrics.csv` logs the fraction of steps that used the pushforward path, and `train/loss` / `val/loss` track training as usual (remember flow-matching NLL doesn't go to zero — judge by skill, not loss).
