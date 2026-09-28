@@ -38,6 +38,22 @@ LEDGER = os.path.join(ROOT, "results", "experiments.jsonl")
 PATCHES = os.path.join(ROOT, "results", "patches")
 
 
+
+def model_tag(ckpt):
+    """Short, filesystem-safe model id from a checkpoint path, for naming outputs:
+    monthly.ckpt -> 'monthly'; monthly_pf/last.ckpt -> 'monthly_pf';
+    monthly_pf/step_10000.ckpt -> 'monthly_pf_step_10000'."""
+    import re
+    stem = os.path.splitext(os.path.basename(ckpt))[0]
+    parent = os.path.basename(os.path.dirname(ckpt))
+    if re.match(r"^(last|best)(-v\d+)?$", stem):      # generic Lightning names
+        m = parent
+    elif stem.startswith("step_"):
+        m = f"{parent}_{stem}"
+    else:
+        m = stem
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", m)
+
 def _git(*args):
     try:
         return subprocess.run(["git", *args], capture_output=True, cwd=ROOT).stdout

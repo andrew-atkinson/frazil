@@ -15,6 +15,10 @@ from __future__ import annotations
 import json
 import os
 import statistics
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+from results_log import model_tag
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEDGER = os.path.join(ROOT, "results", "experiments.jsonl")
@@ -23,12 +27,8 @@ STATES = ["sit", "sic", "sid", "siu", "siv", "snt"]
 
 
 def model_of(params):
-    c = params.get("ckpt_resolved", "") or ""
-    if "monthly_pf" in c:
-        return "monthly_pf"
-    if c.endswith("monthly.ckpt"):
-        return "monthly"
-    return os.path.splitext(os.path.basename(c))[0] or "?"
+    c = params.get("ckpt_resolved") or params.get("ckpt") or ""
+    return model_tag(c) if c else "?"
 
 
 def _mean_skill_at(rec, key, lead):
