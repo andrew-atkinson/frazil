@@ -44,6 +44,7 @@ from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from frazil import paths
 
 STATES = ["sit", "sic", "sid", "siu", "siv", "snt"]
 FORCINGS = ["tus", "huss", "uas", "vas"]
@@ -123,12 +124,12 @@ def verify(zarr_path, aux_path):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--datacube-dir", default="data/train_data/monthly_datacube")
-    ap.add_argument("--out-dir", default="data/train_data")
+    ap.add_argument("--datacube-dir", default=paths.DATACUBE)
+    ap.add_argument("--out-dir", default=paths.TRAIN_DATA)
     ap.add_argument("--suffix", default="_monthly",
                     help="written as train<suffix>.zarr / validation<suffix>.zarr")
     ap.add_argument("--val-start-year", type=int, default=2015)
-    ap.add_argument("--aux-path", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--aux-path", default=paths.AUX)
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--extra-forcings", nargs="*", default=[],
                     help="extra forcing channels to include (e.g. ssrd strd sst); "

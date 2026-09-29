@@ -35,6 +35,7 @@ import numpy as np
 import xarray as xr
 
 import frazil.preprocess as P
+from frazil import paths
 
 RAW = ["tus", "huss", "uas", "vas"]                 # bias-corrected fields
 DEGREE = ["pdd_month", "fdd_month", "pdd_year", "fdd_year"]
@@ -115,12 +116,12 @@ def _selfcheck():
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cmip", default="data/train_data/cmip_forcing.nc")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
-    ap.add_argument("--out-dir", default="data/train_data/cmip_datacube")
+    ap.add_argument("--cmip", default=paths.CMIP_FORCING_RAW)
+    ap.add_argument("--aux", default=paths.AUX)
+    ap.add_argument("--out-dir", default=paths.CMIP_DATACUBE)
     ap.add_argument("--start-year", type=int, default=2015)
     ap.add_argument("--end-year", type=int, default=2100)
-    ap.add_argument("--bias-ref", default="data/train_data/monthly_datacube",
+    ap.add_argument("--bias-ref", default=paths.DATACUBE,
                     help="on-grid ERA5 datacube to bias-correct against")
     ap.add_argument("--bias-years", default="1995-2014",
                     help="baseline overlap YYYY-YYYY (historical CMIP vs ERA5)")

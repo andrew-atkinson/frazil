@@ -25,18 +25,17 @@ import xarray as xr
 
 import frazil.models as E
 
-CMAP = {"sit": "viridis", "sic": "Blues_r", "sid": "magma",
-        "siu": "RdBu_r", "siv": "RdBu_r", "snt": "viridis"}
-DIVERGING = {"siu", "siv"}
+from frazil import CMAP, DIVERGING  # noqa: F401
+from frazil import paths
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
-    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
-    ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--config", default=paths.CONFIG_FORECAST)
+    ap.add_argument("--train-config", default=paths.CONFIG_TRAIN)
+    ap.add_argument("--datacube", default=paths.DATACUBE)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--target-year", type=int, default=2018)
     ap.add_argument("--target-month", type=int, default=3)
     ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")

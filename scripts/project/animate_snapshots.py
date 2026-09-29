@@ -35,10 +35,8 @@ import xarray as xr
 
 # Same colormaps as predict_monthly / freerun state_map (inlined to avoid pulling
 # in torch/gensim just to draw pictures).
-CMAP = {"sit": "viridis", "sic": "Blues_r", "sid": "magma",
-        "siu": "RdBu_r", "siv": "RdBu_r", "snt": "viridis"}
-DIVERGING = {"siu", "siv"}
-UNITS = {"sit": "m", "sic": "1", "sid": "1", "siu": "m/s", "siv": "m/s", "snt": "m"}
+from frazil import CMAP, DIVERGING, UNITS
+from frazil import paths
 
 
 def select_indices(dates, month=None):
@@ -61,8 +59,8 @@ def _selfcheck():
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--snap-dir", default="plots/freerun/snapshots")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--snap-dir", default=paths.SNAPSHOTS)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--var", default="sic", choices=list(CMAP), help="variable to animate")
     ap.add_argument("--month", type=int, default=None,
                     help="only this calendar month (1-12), e.g. 9 = September minimum")

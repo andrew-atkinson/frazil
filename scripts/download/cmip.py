@@ -26,6 +26,7 @@ import argparse
 
 import numpy as np
 import xarray as xr
+from frazil import paths
 
 VARS = ["tas", "huss", "uas", "vas"]
 CATALOG = "https://storage.googleapis.com/cmip6/pangeo-cmip6.csv"
@@ -63,7 +64,7 @@ def main(argv=None):
     ap.add_argument("--grid", default="gn", help="grid_label (gn/gr/...)")
     ap.add_argument("--start-year", type=int, default=1994)
     ap.add_argument("--end-year", type=int, default=2100)
-    ap.add_argument("--out", default="data/train_data/cmip_forcing.nc")
+    ap.add_argument("--out", default=paths.CMIP_FORCING_RAW)
     ap.add_argument("--dry-run", action="store_true",
                     help="open lazily and report, don't download/write")
     args = ap.parse_args(argv)

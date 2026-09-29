@@ -18,6 +18,7 @@ import gensim
 import gensim.network
 from frazil import STATES, FORCINGS, DEGREE, UNITS  # noqa: F401  (re-exported)
 from frazil.ledger import model_tag  # noqa: F401  (re-exported)
+from frazil import paths
 
 
 def load_model(ckpt_path, config, device, train_config):
@@ -50,7 +51,7 @@ def load_model(ckpt_path, config, device, train_config):
     return model
 
 
-def default_ckpt(ckpt_dir="data/models/monthly"):
+def default_ckpt(ckpt_dir=paths.BASE_MODEL_DIR):
     """The canonical monthly.ckpt if present, else the newest last*.ckpt.
     (Lightning's -v rotation makes plain last.ckpt an unreliable name, so we
     consolidate the trained model to monthly.ckpt and prefer that.)"""

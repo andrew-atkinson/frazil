@@ -29,6 +29,7 @@ import gensim
 import gensim.network
 from frazil import STATES, FORCINGS, DEGREE, UNITS  # noqa: F401
 from frazil.models import load_model, default_ckpt, load_val_cube, model_tag  # noqa: F401
+from frazil import paths
 
 
 def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
@@ -80,10 +81,10 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
-    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
-    ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--config", default=paths.CONFIG_FORECAST)
+    ap.add_argument("--train-config", default=paths.CONFIG_TRAIN)
+    ap.add_argument("--datacube", default=paths.DATACUBE)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--val-start-year", type=int, default=2015)
     ap.add_argument("--max-pairs", type=int, default=0, help="0 = all val pairs")
     ap.add_argument("--n-ens", type=int, default=1, help="ensemble members (mean)")

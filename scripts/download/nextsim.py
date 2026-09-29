@@ -48,6 +48,8 @@ from pathlib import Path
 
 import xarray as xr
 
+from frazil import paths
+
 # --------------------------------------------------------------------------- #
 # Server / dataset layout
 # --------------------------------------------------------------------------- #
@@ -210,7 +212,7 @@ def parse_args(argv=None):
     )
     p.add_argument("--start-year", type=int, default=DATA_FIRST_YEAR)
     p.add_argument("--end-year", type=int, default=DATA_LAST_YEAR)
-    p.add_argument("--out-dir", default="nextsim_opa_monthly")
+    p.add_argument("--out-dir", default=paths.NEXTSIM_RAW)
     p.add_argument("--overwrite", action="store_true",
                    help="re-download years even if the output file exists")
     p.add_argument("--dry-run", action="store_true",

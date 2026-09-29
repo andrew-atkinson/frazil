@@ -28,6 +28,7 @@ import xarray as xr
 
 from frazil.diagnostics import ice_area_km2  # noqa: F401
 from frazil.io import load_nsidc, load_sic
+from frazil import paths
 
 
 def _selfcheck():
@@ -58,7 +59,7 @@ def main(argv=None):
     ap.add_argument("sources", nargs="*",
                     help="cube dirs (datacube or snapshots); each becomes a line")
     ap.add_argument("--labels", default=None, help="comma-sep labels (default: basenames)")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--metric", choices=["extent", "area"], default="extent")
     ap.add_argument("--threshold", type=float, default=0.15, help="SIC extent threshold")
     ap.add_argument("--month", type=int, default=None,

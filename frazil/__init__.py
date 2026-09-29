@@ -6,3 +6,8 @@ STATES = ["sit", "sic", "sid", "siu", "siv", "snt"]
 FORCINGS = ["tus", "huss", "uas", "vas"]
 DEGREE = ["pdd_month", "fdd_month", "pdd_year", "fdd_year"]
 UNITS = {"sit": "m", "sic": "1", "sid": "1", "siu": "m/s", "siv": "m/s", "snt": "m"}
+
+# Map colours per variable (diverging ones are drawn symmetric about zero).
+CMAP = {"sit": "viridis", "sic": "Blues_r", "sid": "magma",
+        "siu": "RdBu_r", "siv": "RdBu_r", "snt": "viridis"}
+DIVERGING = {"siu", "siv"}

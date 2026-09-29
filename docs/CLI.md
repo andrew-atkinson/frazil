@@ -453,6 +453,9 @@ python archive/drift_rollout.py --plot-only --out-dir data/drift_run
 
 # Shared concepts
 
+### Paths (`frazil/paths.py`)
+Every script's default data, model, config and output locations come from `frazil/paths.py` (e.g. `AUX` for the grid file, `DATACUBE`, `NSIDC0051_GRID`, `CMIP_DATACUBE`, `SNAPSHOTS`). All paths are relative to the repository root, so run scripts from there. To move a dataset, change its line there; any script's `--flag` still overrides a default for one run.
+
 ### Checkpoints
 - **`data/models/monthly/monthly.ckpt`** — the canonical trained model. All eval scripts default to it (falling back to the newest `last*.ckpt`).
 - Lightning writes `last.ckpt`, `last-v1.ckpt`, … as it rotates; these are stale once training ends. To resume training, pass `ckpt_path=…/monthly.ckpt` to `train.py`.

@@ -31,6 +31,7 @@ import xarray as xr
 
 from frazil.diagnostics import small_scale_energy
 from frazil.ensemble import pmm
+from frazil import paths
 
 SEASON = {1: "JFM", 2: "JFM", 3: "JFM", 7: "JAS", 8: "JAS", 9: "JAS"}
 
@@ -75,8 +76,8 @@ def main(argv=None):
     ap.add_argument("snap_dir", nargs="?", help="snapshot folder holding members_YYYYMM.nc")
     ap.add_argument("--months", type=int, nargs="+", default=[1, 2, 3, 7, 8, 9])
     ap.add_argument("--max-subsets", type=int, default=10, help="subsets drawn per (month, k)")
-    ap.add_argument("--obs", default="data/obs/nsidc0051_grid")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--obs", default=paths.NSIDC0051_GRID)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--out", default=None, help="per-subset csv (default: plots/ensemble_size_<tag>.csv)")
     ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args(argv)

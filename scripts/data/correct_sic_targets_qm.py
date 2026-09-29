@@ -28,6 +28,7 @@ import os
 import numpy as np
 import pandas as pd
 import xarray as xr
+from frazil import paths
 
 QS = np.linspace(0.0, 1.0, 21)   # quantile knots
 
@@ -93,11 +94,11 @@ def _year_safe(p):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
-    ap.add_argument("--obs", default="data/obs/nsidc0051_grid")
-    ap.add_argument("--out-dir", default="data/train_data/monthly_datacube_sicqm")
+    ap.add_argument("--datacube", default=paths.DATACUBE)
+    ap.add_argument("--obs", default=paths.NSIDC0051_GRID)
+    ap.add_argument("--out-dir", default=paths.DATACUBE_SICQM)
     ap.add_argument("--baseline", default="1995-2018")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args(argv)
     if args.selfcheck:

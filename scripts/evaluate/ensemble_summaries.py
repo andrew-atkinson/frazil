@@ -41,6 +41,7 @@ import xarray as xr
 
 from frazil.diagnostics import small_scale_energy
 from frazil.ensemble import THR, METHODS, pmm, lpmm, summaries, metrics
+from frazil import paths
 
 def _selfcheck():
     rng = np.random.default_rng(0)
@@ -98,8 +99,8 @@ def panel(fields, obs, ocean, title, path):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("snap_dir", nargs="?", help="snapshot folder holding members_YYYYMM.nc")
-    ap.add_argument("--obs", default="data/obs/nsidc0051_grid")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--obs", default=paths.NSIDC0051_GRID)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--panel-month", default=None, help="YYYY-MM for the map panel (default: latest September)")
     ap.add_argument("--out", default=None, help="csv path (default: plots/ensemble_summaries_<tag>.csv)")
     ap.add_argument("--selfcheck", action="store_true")

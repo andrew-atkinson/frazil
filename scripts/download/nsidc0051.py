@@ -29,6 +29,7 @@ import argparse
 import os
 import re
 import sys
+from frazil import paths
 
 SHORT_NAME = "NSIDC-0051"
 VERSION = "2"
@@ -58,7 +59,7 @@ def main(argv=None):
                     help="neXtSIM starts 1995 (the target-correction overlap needs 1995-2018)")
     ap.add_argument("--end-year", type=int, default=2025,
                     help="NSIDC-0051 runs to 2025; 2019-2025 is obs for validating the projection")
-    ap.add_argument("--out-dir", default="data/obs/nsidc0051")
+    ap.add_argument("--out-dir", default=paths.NSIDC0051_RAW)
     ap.add_argument("--daily", action="store_true", help="fetch daily instead of monthly")
     ap.add_argument("--hemisphere", choices=["north", "south", "both"], default="north",
                     help="NSIDC-0051 ships both hemispheres; Arctic work wants north")

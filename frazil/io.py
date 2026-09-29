@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 
 import numpy as np
 import pandas as pd
@@ -71,3 +72,9 @@ def load_sic(path):
     times = pd.DatetimeIndex(var["time"].values)
     order = np.argsort(times.values)
     return sic[order], times[order]
+
+
+def snapshot_date(path):
+    """state_YYYYMM.nc -> Timestamp(YYYY-MM-15), or None if it doesn't match."""
+    m = re.search(r"state_(\d{4})(\d{2})\.nc$", os.path.basename(path))
+    return pd.Timestamp(f"{m.group(1)}-{m.group(2)}-15") if m else None

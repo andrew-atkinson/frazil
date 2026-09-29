@@ -43,6 +43,7 @@ import pandas as pd
 import xarray as xr
 
 import frazil.preprocess as P
+from frazil import paths
 
 PER_DAY = {"ssrd", "strd"}          # mean daily accumulations -> divide by 86400
 
@@ -106,15 +107,15 @@ def _selfcheck():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--era5-dir", default="data/train_data/era5_extra_1995_2025")
-    ap.add_argument("--datacube-dir", default="data/train_data/monthly_datacube")
+    ap.add_argument("--era5-dir", default=paths.ERA5_EXTRA_RAW)
+    ap.add_argument("--datacube-dir", default=paths.DATACUBE)
     ap.add_argument("--out-dir", default=None, help="default: <datacube-dir>_era5x")
     ap.add_argument("--vars", nargs="+", default=["sst", "ssrd", "strd"])
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--leak-check", action="store_true",
                     help="report how closely 'SST at freezing' matches the NSIDC ice mask, then exit")
-    ap.add_argument("--obs", default="data/obs/nsidc0051_grid")
+    ap.add_argument("--obs", default=paths.NSIDC0051_GRID)
     ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args(argv)
     if args.selfcheck:

@@ -37,6 +37,7 @@ import frazil.models as E
 from frazil.io import load_series, save_state
 import frazil.ledger as RL
 from frazil.diagnostics import step_diagnostics, SIC_THRESHOLD
+from frazil import paths
 
 
 def snap_tag(ckpt, forcing):
@@ -49,11 +50,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--ckpt", default=None)
-    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
-    ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
-    ap.add_argument("--cmip-datacube", default="data/train_data/cmip_datacube")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--config", default=paths.CONFIG_FORECAST)
+    ap.add_argument("--train-config", default=paths.CONFIG_TRAIN)
+    ap.add_argument("--datacube", default=paths.DATACUBE)
+    ap.add_argument("--cmip-datacube", default=paths.CMIP_DATACUBE)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--start", default="2015-01", help="start month YYYY-MM (initial truth)")
     ap.add_argument("--years", type=int, default=15, help="length of the free run")
     ap.add_argument("--n-ens", type=int, default=8, help="ensemble members (mean)")
@@ -62,10 +63,10 @@ def main(argv=None):
     ap.add_argument("--forcing", choices=["cyclic", "cmip", "era5"], default="cyclic",
                     help="era5: the real ERA5 forcing of each successive month (a true "
                          "hindcast); past 2018 it continues from --era5-ext")
-    ap.add_argument("--era5-ext", default="data/train_data/era5_forcing_datacube",
+    ap.add_argument("--era5-ext", default=paths.ERA5_EXTENSION,
                     help="forcing-only ERA5 cube beyond neXtSIM's 2018 end "
                          "(preprocess_monthly.py --forcings-only)")
-    ap.add_argument("--out-dir", default="plots/freerun")
+    ap.add_argument("--out-dir", default=paths.FREERUN_OUT)
     ap.add_argument("--snapshot-every", type=int, default=12,
                     help="save the full spatial state every N months (0=off); the "
                          "final state is always saved. These are what maps are drawn from.")
@@ -324,7 +325,7 @@ def main(argv=None):
 
 def state_map(sm, ocean, path, title):
     """Per-variable maps of one spatial state (land masked). No truth needed."""
-    from predict_monthly import CMAP, DIVERGING  # reuse the colormaps
+    from frazil import CMAP, DIVERGING
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
