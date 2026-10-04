@@ -29,6 +29,7 @@ import xarray as xr
 
 import frazil.models as E
 import frazil.ledger as RL
+from frazil import paths
 
 
 def build_climatology(datacube_dir, before_year):
@@ -53,10 +54,10 @@ def build_climatology(datacube_dir, before_year):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
-    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
-    ap.add_argument("--datacube", default="data/train_data/monthly_datacube")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--config", default=paths.CONFIG_FORECAST)
+    ap.add_argument("--train-config", default=paths.CONFIG_TRAIN)
+    ap.add_argument("--datacube", default=paths.DATACUBE)
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--starts", default="2015-01,2015-04,2015-07,2015-10",
                     help="comma-sep YYYY-MM start months; skill is averaged over them")
     ap.add_argument("--max-lead", type=int, default=12, help="cap trajectory length (months)")

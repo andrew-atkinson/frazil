@@ -37,7 +37,8 @@ import xarray as xr
 import frazil.models as E
 from frazil.diagnostics import ice_area_km2
 from frazil.io import load_nsidc
-from extend_snapshots import snapshot_date
+from frazil.io import snapshot_date
+from frazil import paths
 
 SIC = 1  # index of 'sic' in E.STATES
 
@@ -45,18 +46,18 @@ SIC = 1  # index of 'sic' in E.STATES
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--snap-dir", default="plots/freerun/snapshots")
+    ap.add_argument("--snap-dir", default=paths.SNAPSHOTS)
     ap.add_argument("--from-month", type=int, default=7)
     ap.add_argument("--steps", type=int, default=2, help="months to advance (7+2=Sep)")
     ap.add_argument("--stride", type=int, default=1, help="use every Nth July (speed)")
-    ap.add_argument("--cmip-datacube", default="data/train_data/cmip_datacube")
-    ap.add_argument("--truth", default="data/train_data/monthly_datacube",
+    ap.add_argument("--cmip-datacube", default=paths.CMIP_DATACUBE)
+    ap.add_argument("--truth", default=paths.DATACUBE,
                     help="neXtSIM datacube for the truth baseline (or '' to skip)")
-    ap.add_argument("--nsidc", default="data/obs/nsidc", help="NSIDC dir/CSV ('' to skip)")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--nsidc", default=paths.SEA_ICE_INDEX, help="NSIDC dir/CSV ('' to skip)")
+    ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--ckpt", default=None)
-    ap.add_argument("--config", default="configs/config_forecast_monthly.yaml")
-    ap.add_argument("--train-config", default="configs/config_train_monthly_mac.yaml")
+    ap.add_argument("--config", default=paths.CONFIG_FORECAST)
+    ap.add_argument("--train-config", default=paths.CONFIG_TRAIN)
     ap.add_argument("--n-ens", type=int, default=8)
     ap.add_argument("--fast", action="store_true")
     ap.add_argument("--threshold", type=float, default=0.15)

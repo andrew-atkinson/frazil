@@ -10,6 +10,7 @@ import logging
 # External modules
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from frazil import paths
 
 # Internal modules
 
@@ -84,7 +85,7 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
     # Always add a CSVLogger -> data/models/<exp_name>/metrics.csv for easy
     # offline plotting (pandas), alongside whatever cfg.logger is.
     from lightning.pytorch.loggers import CSVLogger
-    csv_logger = CSVLogger("data/models", name=cfg.exp_name, version="")
+    csv_logger = CSVLogger(paths.MODELS, name=cfg.exp_name, version="")
     loggers = [lg for lg in (training_logger, csv_logger) if lg is not None]
 
     main_logger.info("Instantiating trainer")
@@ -101,7 +102,7 @@ def train_task(cfg: DictConfig, network_name: str = "surrogate") -> None:
     # cfg.init_from WITHOUT resuming optimizer/step.
     import os
     ckpt_path = cfg.get("ckpt_path")
-    last_ckpt = os.path.join("data/models", cfg.exp_name, "last.ckpt")
+    last_ckpt = os.path.join(paths.MODELS, cfg.exp_name, "last.ckpt")
     if ckpt_path is None and os.path.exists(last_ckpt):
         ckpt_path = last_ckpt
         main_logger.info(f"Auto-resuming from {last_ckpt}")

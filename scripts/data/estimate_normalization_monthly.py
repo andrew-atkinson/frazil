@@ -46,6 +46,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from omegaconf import OmegaConf
+from frazil import paths
 
 # Datacube variable layout (from preprocess_monthly.py).
 STATES = ["sit", "sic", "sid", "siu", "siv", "snt"]
@@ -122,7 +123,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--datacube",
-                    default="data/train_data/monthly_datacube/monthly_datacube_*.nc")
+                    default=f"{paths.DATACUBE}/monthly_datacube_*.nc")
     ap.add_argument("--out-json", default="results/normalization_monthly.json")
     ap.add_argument("--no-configs", action="store_true",
                     help="only compute/print stats, don't write monthly configs")
@@ -153,7 +154,7 @@ def main(argv=None):
 
     if not args.no_configs:
         wire_config("configs/config_train.yaml", "configs/config_train_monthly.yaml", stats)
-        wire_config("configs/config_forecast.yaml", "configs/config_forecast_monthly.yaml", stats)
+        wire_config("configs/config_forecast.yaml", paths.CONFIG_FORECAST, stats)
 
 
 if __name__ == "__main__":

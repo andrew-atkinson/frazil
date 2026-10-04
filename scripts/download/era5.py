@@ -19,6 +19,8 @@ import zipfile
 
 import cdsapi
 
+from frazil import paths
+
 DATASET = "reanalysis-era5-single-levels-monthly-means"
 
 
@@ -33,7 +35,7 @@ def main():
     args = ap.parse_args()
     y0, y1 = (int(s) for s in args.years.split("-"))
     kind = "era5_extra" if args.extra else "era5"
-    out_dir = args.out_dir or f"data/train_data/{kind}_{y0}_{y1}"
+    out_dir = args.out_dir or f"{paths.TRAIN_DATA}/{kind}_{y0}_{y1}"
     os.makedirs(out_dir, exist_ok=True)
 
     request = {

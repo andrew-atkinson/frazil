@@ -30,6 +30,7 @@ import numpy as np
 import xarray as xr
 
 import frazil.preprocess as P
+from frazil import paths
 
 POLE = 251 / 250.0  # 1.004 flag = pole hole (unobserved central Arctic -> full ice)
 
@@ -52,9 +53,9 @@ def icecon_var(ds):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--in-dir", default="data/obs/nsidc0051")
-    ap.add_argument("--aux", default="data/auxiliary/ds_auxiliary.nc")
-    ap.add_argument("--out-dir", default="data/obs/nsidc0051_grid")
+    ap.add_argument("--in-dir", default=paths.NSIDC0051_RAW)
+    ap.add_argument("--aux", default=paths.AUX)
+    ap.add_argument("--out-dir", default=paths.NSIDC0051_GRID)
     ap.add_argument("--start-year", type=int, default=1995)
     ap.add_argument("--end-year", type=int, default=2025)
     args = ap.parse_args(argv)

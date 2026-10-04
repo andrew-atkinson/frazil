@@ -19,6 +19,7 @@ import argparse
 import os
 import urllib.error
 import urllib.request
+from frazil import paths
 
 BASE = ("https://noaadata.apps.nsidc.org/NOAA/G02135/"
         "{hem}/monthly/data/{H}_{mm:02d}_extent_v4.0.csv")
@@ -45,7 +46,7 @@ def main(argv=None):
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--month", type=int, default=9, help="1-12, or 0 for all 12")
     ap.add_argument("--hemisphere", choices=["north", "south"], default="north")
-    ap.add_argument("--out-dir", default="data/obs/nsidc")
+    ap.add_argument("--out-dir", default=paths.SEA_ICE_INDEX)
     args = ap.parse_args(argv)
 
     months = range(1, 13) if args.month == 0 else [args.month]

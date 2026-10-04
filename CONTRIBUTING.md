@@ -40,4 +40,7 @@ One logical change per commit, message as `type: what changed` (`add:`, `update:
 
 ## Data and models
 
+Every default data, model and output location lives in `frazil/paths.py`; a new dataset or output folder gets a constant there, not a string in a script. Shared code goes in the `frazil/` package; scripts never import each other.
+
+
 Data (`data/`) and outputs (`plots/`) are never committed. A trained model is identified by its run folder in `data/models/<name>/`, which holds the exact resolved config it was trained with (`.hydra/config.yaml`); the results ledger links evaluations to the code that produced them.

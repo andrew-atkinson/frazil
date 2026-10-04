@@ -64,6 +64,7 @@ import xarray as xr
 from frazil.preprocess import (build_nearest_index, regrid_time, local_grid_basis,
                                rotate_to_target, specific_humidity, relative_humidity,
                                degree_days, ym_key)
+from frazil import paths
 
 # --------------------------------------------------------------------------- #
 # Configuration
@@ -208,12 +209,12 @@ def write_forcings_only(forcings, f_keys, years, ds_aux, out_dir, overwrite):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--aux-path", default="data/auxiliary/ds_auxiliary.nc")
+    ap.add_argument("--aux-path", default=paths.AUX)
     ap.add_argument("--era5-path",
-                    default="data/train_data/data_stream-moda_stepType-avgua.nc")
+                    default=paths.ERA5_RAW)
     ap.add_argument("--nextsim-dir",
-                    default="data/train_data/nextsim_opa_monthly")
-    ap.add_argument("--out-dir", default="data/train_data/monthly_datacube")
+                    default=paths.NEXTSIM_RAW)
+    ap.add_argument("--out-dir", default=paths.DATACUBE)
     ap.add_argument("--years", type=int, nargs="*", default=None,
                     help="subset of years to process (default: all found)")
     ap.add_argument("--overwrite", action="store_true")
