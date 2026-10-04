@@ -1,0 +1,21 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "ckpt": null,
+ "climatology_forcing": [],
+ "cmip_datacube": "data/train_data/cmip_datacube",
+ "config": "configs/config_forecast_monthly.yaml",
+ "datacube": "data/train_data/monthly_datacube",
+ "era5_ext": "data/train_data/era5_forcing_datacube",
+ "fast": false,
+ "forcing": "cyclic",
+ "n_ens": 8,
+ "no_log": false,
+ "no_map": false,
+ "note": "",
+ "out_dir": "plots/freerun",
+ "save_members": null,
+ "snapshot_every": 12,
+ "start": "2015-01",
+ "train_config": "configs/config_train_monthly_mac.yaml",
+ "years": 15
+}

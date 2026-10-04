@@ -30,6 +30,7 @@ frazil/             shared code the scripts import (model loading, preprocessing
 gensim/             GenSIM's model code, unchanged apart from the documented bug fixes
 scripts/            command-line tools by stage: download/ -> data/ -> evaluate/ -> project/ -> figures/
 train.py            training entry point (python train.py [+experiment=<name>])
+tests/              pytest suite: fast tier (no data) and --slow tier (real data and models); see CONTRIBUTING.md
 results/            experiment ledger and generated report (versioned)
 archive/            finished one-off tools, kept for the record
 data/, plots/       datasets, checkpoints and figures (never committed)

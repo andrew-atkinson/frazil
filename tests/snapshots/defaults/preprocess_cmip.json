@@ -1,0 +1,11 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "bias_ref": "data/train_data/monthly_datacube",
+ "bias_years": "1995-2014",
+ "cmip": "data/train_data/cmip_forcing.nc",
+ "end_year": 2100,
+ "no_bias": false,
+ "out_dir": "data/train_data/cmip_datacube",
+ "selfcheck": false,
+ "start_year": 2015
+}

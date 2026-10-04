@@ -1,0 +1,10 @@
+{
+ "aux_path": "data/auxiliary/ds_auxiliary.nc",
+ "datacube_dir": "data/train_data/monthly_datacube",
+ "extra_forcings": [],
+ "no_verify": false,
+ "out_dir": "data/train_data",
+ "overwrite": false,
+ "suffix": "_monthly",
+ "val_start_year": 2015
+}

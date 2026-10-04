@@ -1,0 +1,5 @@
+{
+ "datacube": "data/train_data/monthly_datacube/monthly_datacube_*.nc",
+ "no_configs": false,
+ "out_json": "results/normalization_monthly.json"
+}

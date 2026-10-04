@@ -1,0 +1,8 @@
+{
+ "daily": false,
+ "end_year": 2025,
+ "hemisphere": "north",
+ "list": false,
+ "out_dir": "data/obs/nsidc0051",
+ "start_year": 1995
+}

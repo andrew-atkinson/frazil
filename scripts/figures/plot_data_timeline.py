@@ -13,6 +13,7 @@ Spans are the data actually in the repo (see docs/DATA_AND_MODELS.md).
 
 Run:  python scripts/figures/plot_data_timeline.py
 """
+import argparse
 import os
 
 import matplotlib
@@ -101,6 +102,13 @@ def draw(mode, path):
     print(f"[plot] {path}")
 
 
-if __name__ == "__main__":
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--out-dir", default="docs/figures")
+    args = ap.parse_args(argv)
     for mode in THEME:
-        draw(mode, f"docs/figures/data_timeline_{mode}.png")
+        draw(mode, f"{args.out_dir}/data_timeline_{mode}.png")
+
+
+if __name__ == "__main__":
+    main()

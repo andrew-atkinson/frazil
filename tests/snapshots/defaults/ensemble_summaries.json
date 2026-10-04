@@ -1,0 +1,8 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "obs": "data/obs/nsidc0051_grid",
+ "out": null,
+ "panel_month": null,
+ "selfcheck": false,
+ "snap_dir": null
+}

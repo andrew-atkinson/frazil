@@ -21,6 +21,9 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 - The neXtSIM downloader saved to `nextsim_opa_monthly/` at the repository root, but preprocessing and the docs expect `data/train_data/nextsim_opa_monthly/`.
 
 ### Added
+- **Tests** (`tests/`, `pytest`), closing ISS-018. Fast tier (~40 s, no data): self-checks, every script loaded from an unrelated folder, snapshots of all script defaults and composed configs, no script-to-script imports or hard-coded paths, no script locating files from its own folder, unit tests of the package (75% coverage). Slow tier (`--slow`, ~5 min): free-run with map and members, bit-identical forcing rebuild, zero-initialised channel expansion vs its seed, animation frame types, report from another folder. Each past regression was reintroduced and caught.
+- `pytest.ini` (pins the test root to the repo), a pre-push hook in `.githooks/` running the fast tier, and `pytest`/`pytest-cov` in `environment-mac.yml`.
+- `results_report.py` and `plot_data_timeline.py` take arguments (`--help`; `--out-dir` for the figure) instead of running immediately.
 - `CHANGELOG.md`, `docs/ISSUES.md` and `CONTRIBUTING.md` (branch workflow).
 - `scripts/evaluate/ensemble_size.py` and the [ensemble-size experiment](experiments/2026-09-28_ensemble_size/): averaging removes only the random part of the error (15% in summer); 4 members give ~85% of the 8-member gain; the plain mean's edge worsens with size, PMM's doesn't.
 - A repository-layout section in the README.
