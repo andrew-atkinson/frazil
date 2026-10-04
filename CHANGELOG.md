@@ -7,20 +7,18 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ### Changed
 - Every default data, model, config and output location is defined once in `frazil/paths.py` (was: the grid file hard-coded 16 times, the datacube 10, …); scripts and `train.py` read it. All script defaults are unchanged except the fix below.
 - Shared colour maps (`CMAP`, `DIVERGING`) and `snapshot_date` moved into the package; no script imports another script any more.
+- Configs moved from the root into `configs/`. `train.py` now defaults to the Mac monthly config, so `python train.py` trains the base model.
+- The four fine-tunes are Hydra experiment recipes in `configs/experiment/` (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`), run with `python train.py +experiment=<name>`. Each composes to exactly the same config as before.
+- Script defaults, the demo notebook and the docs point to `configs/`; `normalization_monthly.json` moved to `results/`.
+- Scripts moved out of `experiments/` into `scripts/` by stage (`download/`, `data/`, `evaluate/`, `project/`, `figures/`), keeping their names. Every command's path changes: `python scripts/<stage>/<name>.py`.
+- Shared code moved into a new `frazil/` package (`models`, `preprocess`, `diagnostics`, `ensemble`, `io`, `ledger`), installed with `pip install -e .`; scripts no longer import each other through `sys.path`. Re-running the 2018 forcing through the moved code is bit-identical to the training data.
+- The results ledger is `frazil/ledger.py` (`python -m frazil.ledger show`).
+- `experiments/` is now the lab notebook: one folder per experiment with a write-up, an index and a template.
 
 ### Fixed
 - `freerun_monthly.py` crashed when drawing its final-state map (it imported colour maps from a script in another folder after phase 2's move).
 - `ensemble_extent.py` only ran from its own folder (it imported `extend_snapshots`).
 - The neXtSIM downloader saved to `nextsim_opa_monthly/` at the repository root, but preprocessing and the docs expect `data/train_data/nextsim_opa_monthly/`.
-
-- Configs moved from the root into `configs/`. `train.py` now defaults to the Mac monthly config, so `python train.py` trains the base model.
-- The four fine-tunes are Hydra experiment recipes in `configs/experiment/` (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`), run with `python train.py +experiment=<name>`. Each composes to exactly the same config as before.
-- Script defaults, the demo notebook and the docs point to `configs/`; `normalization_monthly.json` moved to `results/`.
-
-- Scripts moved out of `experiments/` into `scripts/` by stage (`download/`, `data/`, `evaluate/`, `project/`, `figures/`), keeping their names. Every command's path changes: `python scripts/<stage>/<name>.py`.
-- Shared code moved into a new `frazil/` package (`models`, `preprocess`, `diagnostics`, `ensemble`, `io`, `ledger`), installed with `pip install -e .`; scripts no longer import each other through `sys.path`. Re-running the 2018 forcing through the moved code is bit-identical to the training data.
-- The results ledger is `frazil/ledger.py` (`python -m frazil.ledger show`).
-- `experiments/` is now the lab notebook: one folder per experiment with a write-up, an index and a template.
 
 ### Added
 - `CHANGELOG.md`, `docs/ISSUES.md` and `CONTRIBUTING.md` (branch workflow).
