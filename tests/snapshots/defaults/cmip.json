@@ -1,0 +1,10 @@
+{
+ "dry_run": false,
+ "end_year": 2100,
+ "grid": "gn",
+ "member": "r1i1p1f1",
+ "model": "MPI-ESM1-2-LR",
+ "out": "data/train_data/cmip_forcing.nc",
+ "scenario": "ssp245",
+ "start_year": 1994
+}

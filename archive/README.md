@@ -5,7 +5,7 @@ Finished one-off tools, kept for the record. They did their job during developme
 | file | what it was | outcome |
 | --- | --- | --- |
 | `ab_optimizer_monthly.py`, `ab_optimizer.png` | A/B test of GenSIM's optimizer bug (AdamW rebuilt every training step) against the fix | Confirmed the fix; see *Core bug fixes* in the README. |
-| `smoke_train_monthly.py` | Instantiate the training module and run a couple of steps to check shapes and config | Superseded by the tests (planned) and real runs. |
+| `smoke_train_monthly.py` | Instantiate the training module and run a couple of steps to check shapes and config | Superseded by `tests/` and real runs. |
 | `minimal_train_monthly.py` | A minimal real training run on the monthly data | Superseded by `train.py` with the monthly configs. |
 | `train_watch_monthly.py`, `train_loss_monthly.png` | Short training run that plots the loss as it goes | The loss turned out to be a poor progress meter; skill is used instead. |
 | `loss_graph.py` | Quick plot of train/validation loss from a run's `metrics.csv` | Same as above. |

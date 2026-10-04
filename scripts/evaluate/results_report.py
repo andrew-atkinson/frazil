@@ -12,6 +12,7 @@ Run:  python scripts/evaluate/results_report.py
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import statistics
@@ -43,7 +44,9 @@ def load():
     return [json.loads(l) for l in open(LEDGER)]
 
 
-def main():
+def main(argv=None):
+    argparse.ArgumentParser(description=__doc__,
+                            formatter_class=argparse.RawDescriptionHelpFormatter).parse_args(argv)
     recs = load()
     out = [f"# Experiment results report",
            f"\n_generated from {os.path.relpath(LEDGER, ROOT)} "

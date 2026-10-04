@@ -26,6 +26,19 @@ git switch main && git merge --no-ff feat/short-name && git branch -d feat/short
 
 An experiment that didn't pan out is still worth merging if its tooling or its write-up is useful; otherwise delete the branch and note the result in [docs/ISSUES.md](docs/ISSUES.md).
 
+## Tests
+
+```bash
+pytest            # fast tier: no data needed, ~40 s
+pytest --slow     # also end-to-end runs on real data and models, ~5 min (run before merging to main)
+```
+
+The fast tier runs every script's self-check, loads every script from an unrelated folder, compares each script's defaults and every config recipe with stored snapshots (`tests/snapshots/`), forbids scripts importing each other or hard-coding paths, and unit-tests the `frazil` package. The slow tier runs a free-run with its map and members, rebuilds the forcing bit-for-bit, checks the zero-initialised channel expansion against its seed model, and renders each animation frame type.
+
+- **Run the fast tier automatically before every push** (once per clone): `git config core.hooksPath .githooks`. Skip once with `git push --no-verify`.
+- **Every bug fix comes with a test that fails without the fix.** That is how the earlier regressions would have been caught.
+- **Intended changes to defaults or configs:** `pytest --update-snapshots`, then commit the snapshot diff with the change, so the review shows exactly what moved.
+
 ## Commits
 
 One logical change per commit, message as `type: what changed` (`add:`, `update:`, `fix:`, `remove:`, `docs:`), with a short body saying why when it isn't obvious. Refer to issue IDs ("closes ISS-001").

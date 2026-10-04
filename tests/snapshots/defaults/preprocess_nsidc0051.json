@@ -1,0 +1,7 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "end_year": 2025,
+ "in_dir": "data/obs/nsidc0051",
+ "out_dir": "data/obs/nsidc0051_grid",
+ "start_year": 1995
+}

@@ -1,0 +1,15 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "ckpt": null,
+ "cmip_datacube": "data/train_data/cmip_datacube",
+ "config": "configs/config_forecast_monthly.yaml",
+ "dry_run": false,
+ "fast": false,
+ "from_month": 7,
+ "n_ens": 1,
+ "out_dir": null,
+ "overwrite": false,
+ "snap_dir": "plots/freerun/snapshots",
+ "steps": 2,
+ "train_config": "configs/config_train_monthly_mac.yaml"
+}

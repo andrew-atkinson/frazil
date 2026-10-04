@@ -1,0 +1,7 @@
+{
+ "dry_run": false,
+ "end_year": 2018,
+ "out_dir": "data/train_data/nextsim_opa_monthly",
+ "overwrite": false,
+ "start_year": 1995
+}

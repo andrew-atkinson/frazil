@@ -1,0 +1,12 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "csv": false,
+ "labels": null,
+ "metric": "extent",
+ "month": null,
+ "nsidc": null,
+ "out": "plots/ice_area.png",
+ "selfcheck": false,
+ "sources": [],
+ "threshold": 0.15
+}

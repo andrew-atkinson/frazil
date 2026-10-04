@@ -1,0 +1,16 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "max_subsets": 10,
+ "months": [
+  1,
+  2,
+  3,
+  7,
+  8,
+  9
+ ],
+ "obs": "data/obs/nsidc0051_grid",
+ "out": null,
+ "selfcheck": false,
+ "snap_dir": null
+}

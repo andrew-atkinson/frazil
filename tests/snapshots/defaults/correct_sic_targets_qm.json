@@ -1,0 +1,8 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "baseline": "1995-2018",
+ "datacube": "data/train_data/monthly_datacube",
+ "obs": "data/obs/nsidc0051_grid",
+ "out_dir": "data/train_data/monthly_datacube_sicqm",
+ "selfcheck": false
+}

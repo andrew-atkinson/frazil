@@ -1,0 +1,9 @@
+{
+ "aux_path": "data/auxiliary/ds_auxiliary.nc",
+ "era5_path": "data/train_data/data_stream-moda_stepType-avgua.nc",
+ "forcings_only": false,
+ "nextsim_dir": "data/train_data/nextsim_opa_monthly",
+ "out_dir": "data/train_data/monthly_datacube",
+ "overwrite": false,
+ "years": null
+}

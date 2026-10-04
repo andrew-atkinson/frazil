@@ -1,0 +1,15 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "datacube_dir": "data/train_data/monthly_datacube",
+ "era5_dir": "data/train_data/era5_extra_1995_2025",
+ "leak_check": false,
+ "obs": "data/obs/nsidc0051_grid",
+ "out_dir": null,
+ "overwrite": false,
+ "selfcheck": false,
+ "vars": [
+  "sst",
+  "ssrd",
+  "strd"
+ ]
+}

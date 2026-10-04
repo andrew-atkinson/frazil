@@ -1,0 +1,14 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "dpi": 110,
+ "fps": 6,
+ "member": 0,
+ "month": null,
+ "out": null,
+ "selfcheck": false,
+ "snap_dir": "plots/freerun/snapshots",
+ "summary": "mean",
+ "var": "sic",
+ "vmax": null,
+ "vmin": null
+}

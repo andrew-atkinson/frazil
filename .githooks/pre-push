@@ -1,0 +1,16 @@
+#!/bin/sh
+# Run the fast test tier (no data needed, about a minute) before every push.
+# Enable once per clone:   git config core.hooksPath .githooks
+# Skip for one push:       git push --no-verify
+# Uses `python` from the active environment (conda activate frazil), or $FRAZIL_PYTHON.
+PY="${FRAZIL_PYTHON:-python}"
+if ! "$PY" -c "import pytest, frazil" >/dev/null 2>&1; then
+    echo "pre-push: '$PY' can't import pytest and frazil."
+    echo "          Activate the environment (conda activate frazil) or set FRAZIL_PYTHON, then push again."
+    exit 1
+fi
+cd "$(git rev-parse --show-toplevel)" || exit 1
+if ! "$PY" -m pytest -q; then
+    echo "pre-push: fast tests failed, push stopped. Fix them, or push anyway with: git push --no-verify"
+    exit 1
+fi

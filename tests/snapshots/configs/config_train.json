@@ -1,0 +1,266 @@
+{
+ "batch_size": 4,
+ "callbacks": {
+  "learning_rate_monitor": {
+   "_target_": "lightning.pytorch.callbacks.LearningRateMonitor"
+  },
+  "model_checkpoint_best": {
+   "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+   "auto_insert_metric_name": false,
+   "dirpath": "data/models/${exp_name}",
+   "filename": "best",
+   "monitor": "val/loss",
+   "save_last": false,
+   "save_top_k": 1,
+   "save_weights_only": false
+  },
+  "model_checkpoint_last": {
+   "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+   "auto_insert_metric_name": false,
+   "dirpath": "data/models/${exp_name}",
+   "every_n_epochs": 1,
+   "filename": "last",
+   "monitor": null,
+   "save_last": true,
+   "save_on_train_epoch_end": true,
+   "save_top_k": 1,
+   "save_weights_only": false
+  },
+  "model_checkpoint_step": {
+   "_target_": "lightning.pytorch.callbacks.ModelCheckpoint",
+   "auto_insert_metric_name": false,
+   "dirpath": "data/models/${exp_name}",
+   "every_n_train_steps": 10000,
+   "filename": "step_{step:05d}",
+   "monitor": null,
+   "save_last": false,
+   "save_top_k": -1,
+   "save_weights_only": true
+  },
+  "model_summary": {
+   "_target_": "lightning.pytorch.callbacks.RichModelSummary",
+   "max_depth": 3
+  },
+  "tqdm_pbar": {
+   "_target_": "lightning.pytorch.callbacks.TQDMProgressBar",
+   "refresh_rate": 500
+  }
+ },
+ "ckpt_path": null,
+ "compile": true,
+ "data": {
+  "_target_": "gensim.data_module.SurrogateDataModule",
+  "aux_path": "data/auxiliary/ds_auxiliary.nc",
+  "base_resolution": 12.5,
+  "batch_size": "${batch_size}",
+  "data_path": "data/train_data",
+  "delta_t": 2,
+  "fast": true,
+  "forcing_variables": [
+   "tus",
+   "huss",
+   "uas",
+   "vas"
+  ],
+  "n_input_steps": 1,
+  "n_rollout_steps": 1,
+  "n_train_samples": null,
+  "n_workers": "${num_workers}",
+  "pin_memory": true,
+  "state_variables": [
+   "sit",
+   "sic",
+   "sid",
+   "siu",
+   "siv",
+   "snt"
+  ],
+  "suffix": "",
+  "threads_limit": "shared",
+  "val_batch_size": "${batch_size}"
+ },
+ "devices": 8,
+ "exp_name": "gensim",
+ "logger": {
+  "_target_": "lightning.pytorch.loggers.WandbLogger",
+  "log_model": false,
+  "mode": "offline",
+  "name": "${exp_name}",
+  "offline": true,
+  "project": "gensim",
+  "save_dir": "data",
+  "tags": [
+   "surrogate",
+   "train"
+  ]
+ },
+ "logging_level": "DEBUG",
+ "nodes": 1,
+ "num_workers": 8,
+ "seed": 0,
+ "surrogate": {
+  "_recursive_": false,
+  "_target_": "gensim.train_module.GenSIMTrainModule",
+  "censoring": true,
+  "decoder": {
+   "_target_": "gensim.encoder_decoder.GaussianDecoder",
+   "lower_bound": [
+    0.0,
+    0.0,
+    0.0,
+    -Infinity,
+    -Infinity,
+    0.0
+   ],
+   "mean": [
+    -0.0,
+    0.0,
+    0.0,
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "std": [
+    0.0822,
+    0.0323,
+    0.0529,
+    0.0415,
+    0.0416,
+    0.0115
+   ],
+   "upper_bound": [
+    Infinity,
+    1.0,
+    1.0,
+    Infinity,
+    Infinity,
+    Infinity
+   ]
+  },
+  "ema_rate": 0.9999,
+  "encoder": {
+   "_target_": "gensim.encoder_decoder.GaussianEncoder",
+   "mean": [
+    0.876,
+    0.4922,
+    0.3684,
+    -0.0025,
+    -0.0079,
+    0.0766,
+    268.4102,
+    0.003,
+    0.4186,
+    -0.3956,
+    268.4102,
+    0.003,
+    0.4186,
+    -0.3956,
+    3.7189,
+    6.662,
+    3.7086,
+    6.6906
+   ],
+   "std": [
+    1.054,
+    0.4746,
+    0.4307,
+    0.0621,
+    0.0653,
+    0.1283,
+    12.8402,
+    0.0025,
+    5.4348,
+    5.435,
+    12.8402,
+    0.0025,
+    5.4348,
+    5.435,
+    4.9611,
+    8.9729,
+    4.2826,
+    5.1771
+   ]
+  },
+  "lr": 0.0005,
+  "lr_warmup": 5000,
+  "network": {
+   "_target_": "gensim.network.Transformer",
+   "dropout_mlp": 0.0,
+   "lengthscale": 10,
+   "long_skips": true,
+   "mult": 2,
+   "n_augment_in": 3,
+   "n_blocks": 8,
+   "n_embedding": 512,
+   "n_features": 512,
+   "n_features_head": 64,
+   "n_heads": 8,
+   "n_input": 24,
+   "n_output": 6,
+   "n_res_in": 1,
+   "n_rope_features": 32,
+   "n_time_in": 1,
+   "patch_size": 2
+  },
+  "optimize_scale": true,
+  "overlap_size": [
+   8,
+   8
+  ],
+  "patch_generator": {
+   "_target_": "gensim.augmentation.PatchGenerator",
+   "coarse_levels": [
+    1,
+    2,
+    4,
+    8
+   ],
+   "coarse_probs": [
+    1,
+    0.5,
+    0.25,
+    0.125
+   ],
+   "mask_path": "data/auxiliary/ds_auxiliary.nc",
+   "n_patches": 8,
+   "overlap_size": "${surrogate.overlap_size}",
+   "patch_size": "${surrogate.patch_size}",
+   "train_with_overlap": "${surrogate.train_with_overlap}",
+   "valid_threshold": 0.1
+  },
+  "total_steps": 1000000,
+  "train_augmentation": {
+   "_target_": "gensim.augmentation.DataAugmentation",
+   "hflip": {
+    "_target_": "gensim.augmentation.HFlipTransformation",
+    "probability": 0.5
+   },
+   "rotate": {
+    "_target_": "gensim.augmentation.RotateTransformation",
+    "probability": 0.5
+   },
+   "vflip": {
+    "_target_": "gensim.augmentation.VFlipTransformation",
+    "probability": 0.5
+   }
+  },
+  "train_with_overlap": true,
+  "weight_decay": 0.001
+ },
+ "trainer": {
+  "_target_": "lightning.pytorch.Trainer",
+  "accelerator": "cuda",
+  "benchmark": true,
+  "check_val_every_n_epoch": null,
+  "default_root_dir": "data/models/${exp_name}",
+  "deterministic": false,
+  "devices": "${devices}",
+  "enable_checkpointing": true,
+  "max_epochs": -1,
+  "max_steps": 1000000,
+  "num_nodes": "${nodes}",
+  "precision": "bf16-mixed",
+  "strategy": "ddp",
+  "val_check_interval": 2000
+ }
+}

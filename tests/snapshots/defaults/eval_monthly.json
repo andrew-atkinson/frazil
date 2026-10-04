@@ -1,0 +1,12 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "ckpt": null,
+ "config": "configs/config_forecast_monthly.yaml",
+ "datacube": "data/train_data/monthly_datacube",
+ "max_pairs": 0,
+ "n_ens": 1,
+ "no_log": false,
+ "note": "",
+ "train_config": "configs/config_train_monthly_mac.yaml",
+ "val_start_year": 2015
+}
