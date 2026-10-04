@@ -1,6 +1,6 @@
 # Data and models — inventory
 
-What each model is, what each dataset does, the years it covers, and how much it actually shapes the model. Written 2026-09-24. For the pipeline diagram see [STATUS.md](STATUS.md); for why the model sits above observations see [OBS_GAP.md](OBS_GAP.md).
+What each model is, what each dataset does, the years it covers, and how much it actually shapes the model. Written 2026-09-24. For the pipeline diagram see [CLI.md](CLI.md#the-pipeline-at-a-glance); for why the model sits above observations see [OBS_GAP.md](OBS_GAP.md).
 
 ## Models
 

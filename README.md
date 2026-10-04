@@ -11,6 +11,18 @@
 - **New around it:** downloaders and preprocessing for monthly data, pushforward (drift) fine-tuning, quantile-mapped targets, extra forcing channels, an out-of-sample hindcast against observations, ensemble summaries and animation tools (`scripts/`, `frazil/`, `docs/`).
 - **Different purpose.** Its results are not comparable to GenSIM's published skill; see *Limitations* below.
 
+## What it can and can't do
+
+| | result |
+| --- | --- |
+| **One month ahead** (validation, 2015–18) | beats persistence by 40–60% and climatology by 40–50% on all six ice variables |
+| **Up to a year ahead** | beats climatology by 20–30% on thickness and drift; snow and damage fade to climatology |
+| **Real weather, unseen years** (2019–25, `monthly_pf_qm`) | follows the year-to-year swings in September extent (correlation 0.86) but runs ~0.4 M km² too icy per member, mostly misplaced summer ice on the Pacific shelf ([experiments](experiments/README.md)) |
+| **Long free-runs** | stable for decades: no blow-up, the seasonal cycle holds |
+| **Warming scenario** (CMIP6 SSP2-4.5, `monthly_pf_qm`, per member) | September extent 5.7 (2015–24) → 3.4 (2045–54) → 2.8 (2071–80) → 1.8 M km² (2091–99). It starts ~1 M km² above observations (one climate model's weather plus drift), so read the decline, not the level |
+
+It is **not** a calibrated climate model. It inherits its training target's biases (neXtSIM runs too icy in September), follows a single climate-model trajectory for the future, and works only at monthly resolution. See *Limitations* below and the open problems in [docs/ISSUES.md](docs/ISSUES.md).
+
 ## Installation
 
 ```bash
@@ -137,6 +149,20 @@ This is a **coarse, exploratory, from-scratch experiment**, not a drop-in upgrad
 - **Atmosphere-driven — it cannot forecast the future on its own.** GenSIM *consumes* forcings; it does not generate them. Predicting beyond the data requires supplying future forcings (reanalysis for the recent past, or a climate scenario), regridded through `preprocess_monthly.py`.
 - **Data coverage.** neXtSIM-OPA exists only for **1995–2018**, so all training and neXtSIM-based validation stays in that window. Beyond it, models are scored against observations only: NSIDC over 2019–25, under real ERA5 weather.
 - **Not the intended scale.** Real training belongs on CUDA (the base config targets 8 GPUs); the Mac path trades model size and speed for portability.
+
+## Documentation
+
+| | |
+| --- | --- |
+| [docs/CLI.md](docs/CLI.md) | every script: what it does, its flags and defaults, the pipeline at a glance, output names |
+| [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md) | every model and dataset: lineage, years, role and influence |
+| [experiments/](experiments/README.md) | the lab notebook: one write-up per experiment, with results |
+| [docs/VISUALS.md](docs/VISUALS.md) | maps, plots and the shrinking-ice animation, end to end |
+| [docs/OBS_GAP.md](docs/OBS_GAP.md) | the investigation into why the model sits above observations |
+| [docs/PUSHFORWARD.md](docs/PUSHFORWARD.md) | pushforward (drift) fine-tuning: method, knobs, cost |
+| [docs/ISSUES.md](docs/ISSUES.md) · [CHANGELOG.md](CHANGELOG.md) | open problems and ideas · what changed when |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, tests and keeping the record |
+| [CREDITS.md](CREDITS.md) · [docs/ORIGINAL_GENSIM.md](docs/ORIGINAL_GENSIM.md) | data citations · the original GenSIM documentation |
 
 ## Credits and data
 

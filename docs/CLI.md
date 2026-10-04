@@ -1,11 +1,11 @@
-# GenSIM monthly model — CLI reference
+# Frazil — CLI reference
 
 Command-by-command reference for the monthly sea-ice pipeline: download → preprocess → train → evaluate → project. Every script is a plain `python <script>.py` with `--flags` (except `train.py`, which is Hydra-driven, and `scripts/download/era5.py`, which is Hydra-driven). Defaults are shown so most commands run with no arguments at all.
 
 - **Environment:** activate the project env first (e.g. `conda activate frazil`). All the model scripts set `PYTORCH_ENABLE_MPS_FALLBACK=1` and auto-detect the device (Apple-Silicon **MPS**, else CPU; CUDA if present).
 - **Run from the repo root** (`seaIce/gensim/`) — default paths are relative to it.
 - **Making figures & animations?** See the dedicated guide **[docs/VISUALS.md](VISUALS.md)** (maps, plots, and the decadal shrinking-ice movie, end to end).
-- **Lost in the moving parts?** **[docs/STATUS.md](STATUS.md)** maps the whole pipeline, what works / is parked, the two models, and the filename scheme. `python scripts/evaluate/results_report.py` tabulates every run from the ledger.
+- **Lost in the moving parts?** The README's *Documentation* section lists every doc; [experiments/](../experiments/README.md) holds what was tried and what came out.
 
 ---
 
@@ -455,6 +455,21 @@ python archive/drift_rollout.py --plot-only --out-dir data/drift_run
 
 ### Paths (`frazil/paths.py`)
 Every script's default data, model, config and output locations come from `frazil/paths.py` (e.g. `AUX` for the grid file, `DATACUBE`, `NSIDC0051_GRID`, `CMIP_DATACUBE`, `SNAPSHOTS`). All paths are relative to the repository root, so run scripts from there. To move a dataset, change its line there; any script's `--flag` still overrides a default for one run.
+
+### Output names
+Outputs are named `<kind>_<tag>[_<detail>].<ext>`, where the tag says which model and which forcing produced them, so runs never overwrite each other. The model part comes from `frazil.ledger.model_tag(ckpt)`: the run folder for `last.ckpt` (`monthly_pf_qm`), the file name otherwise (`monthly`), or `<run>_step_<n>` for step checkpoints. The forcing part is `cyclic` or `cmip`; for `era5` it carries the start year (`era5_2018`); `--climatology-forcing` adds `_clim-<vars>`. Pass an explicit `--out…` to override any default.
+
+| output | default |
+| --- | --- |
+| free-run diagnostics, map | `plots/freerun/freerun_<tag>.{csv,png}`, `…_map.png` |
+| snapshots, members | `plots/freerun/snapshots/<tag>/state_YYYYMM.nc`, `members_YYYYMM.nc` |
+| rollout skill | `plots/rollout_<model>.{png,csv}` |
+| forecast maps | `plots/forecast_<model>_<YYYY-MM>.png` |
+| animation | `plots/anim_<var>_<tag>[_pmm\|_member<k>][_m<MM>].gif` |
+| ensemble summaries, ensemble size | `plots/ensemble_summaries_<tag>.csv` (+ map panel), `plots/ensemble_size_<tag>.csv` |
+| ensemble extent | `plots/ensext_<model>_m<MM>.png` |
+| ice-area chart | `plots/ice_area.png` unless `--out` is given (it overlays several sources) |
+| one-step skill | the results ledger only |
 
 ### Checkpoints
 - **`data/models/monthly/monthly.ckpt`** — the canonical trained model. All eval scripts default to it (falling back to the newest `last*.ckpt`).
