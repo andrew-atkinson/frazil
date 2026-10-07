@@ -67,7 +67,38 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 **Done when:** the rendered files and the commands that made them are recorded in an `experiments/` entry, with the checkpoint's SHA-256.
 
-## v0.5.0 — Summer melt on the Pacific shelf
+## v0.5.0 — Data for live visuals (p5.js, TouchDesigner)
+
+**Why:** the predictions as playable material for creative-coding tools, not only as rendered video: the fields themselves and their motion, in formats those tools read directly.
+
+**What's already there:** every monthly snapshot holds all six predicted fields, including the ice drift velocity (`siu`, `siv`, in m/s along the grid's x and y axes, so it maps straight onto screen space). On the 512×512 grid (cells ~12 km), the median drift is about 3–4 cells a month and the fastest tenth about 17. The animation shows mostly the *concentration* changing; the drift is in the data but not yet shown.
+
+**Features** (a new `scripts/export/` stage, ISS-020 and ISS-021)
+- **Fields per month** from any free-run, as the mean, the PMM or one member: concentration, thickness, damage, snow and drift velocity, plus the land mask and grid coordinates. Formats:
+  - 32-bit float **EXR** image sequences for TouchDesigner: one channel per variable, exact values, usable directly as GPU textures (for example, velocity driving a particle system);
+  - **PNG** sequences with a stated value range per channel for p5.js `loadImage`, and exact **Float32 binary** files for p5.js `loadBytes`;
+  - a **JSON manifest** listing frames, dates, variables, units, scaling and grid size, so a sketch can read any export without hard-coding;
+  - optional downsampling (for example to 128×128) for lightweight sketches.
+- **Motion:**
+  - **drift particles:** carried by the monthly velocity fields with time interpolation for smooth sub-monthly steps, born where ice forms and removed where it melts; exported as trajectories (id, time, x, y) in JSON/CSV and as EXR position maps for GPU particles;
+  - **ice-edge contours:** the 15% edge as polylines per month in normalised screen coordinates, for line drawing and morphing between months;
+  - **growth and melt:** the month-to-month change in concentration and thickness, showing where ice forms and disappears (as distinct from where it drifts);
+  - **edge certainty:** the share of members with ice at each cell, showing where the future edge is uncertain;
+  - **smooth in-between frames:** each month's field carried along the drift toward the next, rather than cross-faded.
+- **Per-member velocity:** `freerun_monthly.py --save-members sic sit siu siv`, so the motion isn't damped by averaging (averaging members partly cancels their velocities).
+- A minimal **p5.js example sketch** (`examples/p5/`) and a TouchDesigner walkthrough in [VISUALS.md](VISUALS.md).
+
+**Targets**
+- Exact round trip: values read back from EXR and binary exports equal the model's to float32 precision; PNG exports are within one step of their stated scaling.
+- Particles: a month's displacement matches the integrated velocity within 1%; no particle ends up on land.
+- Contours: the area inside each month's edge matches the computed extent within 1%.
+- Exporting the full 2015–2100 run (1,020 months) takes under 15 minutes on the laptop.
+
+**Guardrails:** exporting never changes model outputs; every exporter has fast tests on synthetic fields.
+
+**Done when:** a p5.js sketch and a TouchDesigner network each play the 2015–2100 export (fields, particles and edge), documented end to end.
+
+## v0.6.0 — Summer melt on the Pacific shelf
 
 **Why:** the model's own largest error: too little summer melt in the East Siberian and Beaufort seas, growing over a run (ISS-002).
 
@@ -89,9 +120,9 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 **Guardrails:** September correlation ≥ 0.85; December–March ice-edge error ≤ 0.95; one-month skill within 2 points of the v0.3 scorecard on every variable; the 2015–2100 CMIP run stays finite; gains survive the leak test.
 
-**Done when:** a model meets the targets and guardrails and becomes the recommended model. If none does, v0.5.0 still ships the tooling and the write-ups, and the targets carry forward, stated as unmet.
+**Done when:** a model meets the targets and guardrails and becomes the recommended model. If none does, v0.6.0 still ships the tooling and the write-ups, and the targets carry forward, stated as unmet.
 
-## v0.6.0 — Projections with a spread
+## v0.7.0 — Projections with a spread
 
 **Why:** one climate model gives one possible future; a few give a range.
 
@@ -106,7 +137,7 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 1.0 means someone else can rely on it:
 - A clean clone rebuilds every dataset with the documented, scripted downloads.
-- The recommended model meets the v0.5.0 targets, or a documented waiver says why not.
+- The recommended model meets the v0.6.0 targets, or a documented waiver says why not.
 - The scorecard is published with the release.
 - The command-line tools, configs and `frazil` package are stable: from here on, breaking changes need a new major version.
 - Fast and slow tests pass.
