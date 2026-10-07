@@ -21,6 +21,8 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 - The neXtSIM downloader saved to `nextsim_opa_monthly/` at the repository root, but preprocessing and the docs expect `data/train_data/nextsim_opa_monthly/`.
 
 ### Added
+- [docs/ROADMAP.md](docs/ROADMAP.md): milestones v0.3.0 to v1.0.0, each with features, performance targets against a measured baseline, guardrails and exit criteria; the scorecard protocol; development (2019–22) vs holdout (2023–25) years.
+- Versioning, release checklist and bug-fixing route (severities S1–S3, test-first fixes, errata) in CONTRIBUTING.md; a *Target* milestone for every open issue.
 - **Tests** (`tests/`, `pytest`), closing ISS-018. Fast tier (~40 s, no data): self-checks, every script loaded from an unrelated folder, snapshots of all script defaults and composed configs, no script-to-script imports or hard-coded paths, no script locating files from its own folder, unit tests of the package (75% coverage). Slow tier (`--slow`, ~5 min): free-run with map and members, bit-identical forcing rebuild, zero-initialised channel expansion vs its seed, animation frame types, report from another folder. Each past regression was reintroduced and caught.
 - A docs test: every relative link in the Markdown files must resolve (catches links to moved or deleted docs).
 - `pytest.ini` (pins the test root to the repo), a pre-push hook in `.githooks/` running the fast tier, and `pytest`/`pytest-cov` in `environment-mac.yml`.

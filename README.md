@@ -160,8 +160,9 @@ This is a **coarse, exploratory, from-scratch experiment**, not a drop-in upgrad
 | [docs/VISUALS.md](docs/VISUALS.md) | maps, plots and the shrinking-ice animation, end to end |
 | [docs/OBS_GAP.md](docs/OBS_GAP.md) | the investigation into why the model sits above observations |
 | [docs/PUSHFORWARD.md](docs/PUSHFORWARD.md) | pushforward (drift) fine-tuning: method, knobs, cost |
-| [docs/ISSUES.md](docs/ISSUES.md) · [CHANGELOG.md](CHANGELOG.md) | open problems and ideas · what changed when |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, tests and keeping the record |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | where it's going: milestones to 1.0, performance targets, the scorecard |
+| [docs/ISSUES.md](docs/ISSUES.md) · [CHANGELOG.md](CHANGELOG.md) | open problems and ideas, each tied to a milestone · what changed when |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, tests, versions and releases, fixing bugs |
 | [CREDITS.md](CREDITS.md) · [docs/ORIGINAL_GENSIM.md](docs/ORIGINAL_GENSIM.md) | data citations · the original GenSIM documentation |
 
 ## Credits and data
