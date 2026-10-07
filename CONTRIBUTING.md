@@ -49,7 +49,57 @@ One logical change per commit, message as `type: what changed` (`add:`, `update:
 - **Issues:** new problems and ideas go in [docs/ISSUES.md](docs/ISSUES.md) with the next ID; close them there when fixed.
 - **Experiments:** each gets a folder in [experiments/](experiments/README.md) (copy `_template.md`) and a line in its index; training recipes go in `configs/experiment/`.
 - **Results:** runs log themselves to `results/experiments.jsonl` with the code fingerprint; pass `--note` so the report says what each run was.
-- **Releases:** when `main` reaches a milestone, move *Unreleased* under a version and tag it: `git tag -a v0.2.0 -m "..." && git push --tags`.
+- **Releases:** see *Versions and releases* below; the plan is in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Versions and releases
+
+Versions follow [semantic versioning](https://semver.org/): `vMAJOR.MINOR.PATCH`. The version lives in three places that must agree: `setup.py`, the heading in [CHANGELOG.md](CHANGELOG.md), and an annotated git tag `vX.Y.Z`. (The `version_1` tag in a local clone is GenSIM's own, fetched from the original repository.)
+
+**What changes which number.** Before 1.0, anything may still change:
+- **MINOR** (`0.3.0`): a roadmap milestone, meaning new features, a new recommended model, or a breaking change. Breaking changes are listed under *Changed* with what to do about them.
+- **PATCH** (`0.3.1`): bug fixes and documentation. Outputs don't change except where the fix requires it.
+
+From 1.0 on, a breaking change needs a **MAJOR** version. Breaking means any of:
+- a script, flag or default renamed, removed or changed in meaning
+- output names changed
+- the `frazil` package's functions changed incompatibly
+- a training recipe changed so it trains a different model
+- checkpoints or datacubes no longer loading
+- the scorecard protocol changed
+
+When renaming a flag, keep the old one working (with a warning) for one minor version.
+
+**Models in releases.** Each release names its recommended model in [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md), with its scorecard and the SHA-256 of its checkpoint (`shasum -a 256 <ckpt>`), because checkpoints aren't in git.
+
+**Release checklist**
+1. Everything planned for the milestone is merged; `pytest` and `pytest --slow` pass on `main`.
+2. If the recommended model changed: its scorecard is recorded, its targets are met or explicitly waived in the release notes, and the guardrails hold. The README's *What it can and can't do* numbers come from that scorecard.
+3. Move *Unreleased* in the changelog under `## [X.Y.Z] — date`; set the same version in `setup.py`; tick the milestone in [docs/ROADMAP.md](docs/ROADMAP.md).
+4. Commit as `release: vX.Y.Z`, then tag and push:
+   ```bash
+   git tag -a vX.Y.Z -m "Frazil X.Y.Z: <one-line summary>" && git push origin main vX.Y.Z
+   ```
+5. Optionally publish a GitHub release with the changelog section as its notes.
+
+## Fixing bugs
+
+**Severity**
+
+| | what it means | when |
+| --- | --- | --- |
+| **S1 critical** | wrong results without any error, lost data, the main workflow (preprocess, train, free-run, animate) crashing, or an already-published result affected | fix now; patch release as soon as it's merged |
+| **S2 major** | a tool crashes or gives wrong output, but there's a workaround | next patch release |
+| **S3 minor** | cosmetic, documentation, rough edges | whenever convenient |
+
+**Route**
+1. Record it in [docs/ISSUES.md](docs/ISSUES.md): kind *bug*, its severity, how to reproduce it.
+2. Branch from `main`: `fix/iss-NNN-short-name`.
+3. **Write the test first:** a test that fails because of the bug. It stays in the suite so the bug can't come back.
+4. Fix it. Run `pytest`, and `pytest --slow` if the fix touches models, data or outputs.
+5. Add a *Fixed* line to the changelog's *Unreleased* section, citing the issue; move the issue to *Closed*.
+6. Merge. For S1 and S2, follow the release checklist for a patch version.
+
+**Errata.** If a bug affected results that were already written up (an `experiments/` entry, the README numbers, a scorecard, a rendered artwork), add a dated *Erratum* note to each affected place saying what was wrong and what changed. Re-run the affected analysis if its conclusion could change, and mention it in the changelog.
 
 ## Data and models
 
