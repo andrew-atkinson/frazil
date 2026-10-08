@@ -2,6 +2,14 @@
 
 What each model is, what each dataset does, the years it covers, and how much it actually shapes the model. Written 2026-09-24. For the pipeline diagram see [CLI.md](CLI.md#the-pipeline-at-a-glance); for why the model sits above observations see [OBS_GAP.md](OBS_GAP.md).
 
+## Recommended model
+
+| release | model | checkpoint | SHA-256 | why |
+| --- | --- | --- | --- | --- |
+| v0.2.0 | `monthly_pf_qm` | `data/models/monthly_pf_qm/last.ckpt` (65,214,985 bytes, written 2026-09-24) | `6208b4a82a7f8693776a4ff04c228e1a8c14d042e2b19edb0275df9dfd3ce71a` | Best on the 2019–25 out-of-sample hindcast (baseline in [ROADMAP.md](ROADMAP.md)); its forecast-skill scorecard comes with v0.3.0. |
+
+Check a copy with `shasum -a 256 data/models/monthly_pf_qm/last.ckpt`. Checkpoints aren't in git; this hash is how to confirm you hold the released model.
+
 ## Models
 
 All share one architecture: a flow-matching Transformer (~4.2 M trainable parameters, 7.9 M including the EMA copy) on a 512×512 polar grid, predicting the 6 ice states one month ahead from the previous state + atmospheric forcing. Checkpoints live in `data/models/<name>/`.

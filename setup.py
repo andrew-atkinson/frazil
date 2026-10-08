@@ -15,7 +15,7 @@ setup(
     packages=find_packages(
         include=["gensim", "frazil"]
     ),
-    version='0.1.0',
+    version='0.2.0',
     description='Unofficial monthly adaptation of the GenSIM sea-ice model (Finn et al., 2025)',
     author='Andrew Atkinson (adaptation); Tobias Finn (original GenSIM)',
     url='https://github.com/andrew-atkinson/frazil',

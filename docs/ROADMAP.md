@@ -22,7 +22,7 @@ A fixed protocol, so numbers compare across versions. It becomes a tool in v0.3.
 
 If the protocol changes, re-score the previous release's model with the new protocol so the comparison stays like-for-like, and give the scorecard a new version number.
 
-## Where we are: v0.2.0, the restructure
+## Where we are: v0.2.0, the restructure (released 2026-10-07)
 
 The code is reorganised and tested; model behaviour is unchanged from v0.1.0. Recommended model: **`monthly_pf_qm`** (pushforward on quantile-mapped targets).
 

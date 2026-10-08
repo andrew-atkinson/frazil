@@ -4,6 +4,10 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-07
+
+The restructure release: a reorganised, tested and documented codebase with a plan to 1.0. Model behaviour is unchanged from 0.1.0; the recommended model is `monthly_pf_qm` (checkpoint SHA-256 `6208b4a8…ce71a`, see [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)). Commands moved: see *Changed*.
+
 ### Changed
 - Every default data, model, config and output location is defined once in `frazil/paths.py` (was: the grid file hard-coded 16 times, the datacube 10, …); scripts and `train.py` read it. All script defaults are unchanged except the fix below.
 - Shared colour maps (`CMAP`, `DIVERGING`) and `snapshot_date` moved into the package; no script imports another script any more.
@@ -63,5 +67,6 @@ First release as Frazil, a monthly, laptop-scale adaptation of [GenSIM](https://
 - The results report labelled every `monthly_pf_*` run as `monthly_pf`.
 - ERA5 radiation and SST were interleaved on different time stamps when merged.
 
-[Unreleased]: https://github.com/andrew-atkinson/frazil/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/andrew-atkinson/frazil/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/andrew-atkinson/frazil/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/andrew-atkinson/frazil/releases/tag/v0.1.0
