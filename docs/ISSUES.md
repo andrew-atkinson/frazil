@@ -31,7 +31,7 @@ Status: **open**, **in progress**, **parked** (deliberately not pursued now), **
 | --- | --- | --- | --- |
 | ISS-019 | chore | Run the fast tests on GitHub Actions | The pre-push hook covers it locally; CI would need the full PyTorch stack installed on every push. Worth it if others contribute. |
 | ISS-013 | research | Harder or from-scratch QM fine-tune | QM targets address the second-smallest error term; see OBS_GAP.md. |
-| ISS-014 | research | Daily-data retrain (SASIP `1d/`, ~35× more samples) | Biggest untapped data lever; ~4 GB download and much longer training. |
+| ISS-014 | research | Weekly (or daily) step instead of monthly | ~4.3× more training samples (1,043 vs 240 weeks/months in 1995–2014) and finer melt/freeze timing, against ~4.4 autoregressive steps per month (more drift) and 4.3× slower runs. Checked 2026-10-08: SASIP's `MEAN/1d/` and `6h/` folders are empty; the source is the 6-hourly `Moorings_YYYYmMM.nc` in `OPA-neXtSIM_CREG025-ILBOXE140-S/<year>/nextsim/` (1995–2018, all 6 targets, ~1.3 GB per month). One snapshot per day via OPeNDAP is ~68 GB to transfer, reduced to weekly means as it streams (~4 GB kept). Also needs daily ERA5 (and daily CMIP for projections). Plan: [weekly_step](../experiments/2026-10-09_weekly_step/). |
 
 ## Closed
 
