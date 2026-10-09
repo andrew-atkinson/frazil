@@ -13,3 +13,4 @@ Start a new experiment on an `exp/` branch (see [CONTRIBUTING.md](../CONTRIBUTIN
 | 2026-09-27 | [sst_channel](2026-09-27_sst_channel/) | Does ERA5 sea-surface temperature as an input help? | done | No effect: the channel was barely learned (2–5% weight at inference). |
 | 2026-09-28 | [radiation_channel](2026-09-28_radiation_channel/) | Does downward solar and thermal radiation fix the summer melt deficit? | in progress | Trained; channels at 5–8% weight. Hindcasts pending. |
 | 2026-09-28 | [ensemble_size](2026-09-28_ensemble_size/) | How does the benefit of averaging grow with ensemble size? | done | 4 members give ~85% of the 8-member gain; the plain mean's edge gets worse with size, PMM's doesn't. |
+| 2026-10-09 | [weekly_step](2026-10-09_weekly_step/) | Does a weekly time step predict monthly sea ice better than the monthly model? | planned | Data source and storage checked; plan: 100k steps vs `monthly` at matched steps. |
