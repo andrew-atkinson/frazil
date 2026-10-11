@@ -44,3 +44,4 @@ dependencies:
       - wandb
       - pytest
       - pytest-cov
+      - copernicusmarine      # neXtSIM reanalysis (Copernicus Marine); login once with `copernicusmarine login`

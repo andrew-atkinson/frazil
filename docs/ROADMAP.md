@@ -54,7 +54,31 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 **Done when:** the scorecard JSON for `monthly_pf_qm` is committed and the README's numbers cite it; every download script runs in `--dry-run`/`--list` mode from a clean clone; fast and slow tests pass.
 
-## v0.4.0 — First artwork release
+## v0.4.0 — Close the summer gap
+
+**Why:** the model's largest error, and the one between it and the observations: too little summer melt, mostly its own in the East Siberian and Beaufort seas, growing over a run (ISS-002). It comes before the artwork so the animations show the better model. (Moved up from v0.6.0 on 2026-10-09.)
+
+**Work**, cheapest first:
+1. ~~**Confirm the fine-tune gain.**~~ Done 2026-10-10: the control `monthly_pf_qm_ema` (same fine-tune, no radiation) matches the radiation model, so the gain is the fine-tune (ISS-005 closed). It is the v0.4.0 candidate; on 2019–22 it meets the September bias and summer ice-edge targets, not June (+0.64), East Siberian (+0.19) or drift growth (+0.32). Still to check for it: one-month skill and a finite 2015–2100 CMIP run.
+2. **Make new inputs learnable** (ISS-003, ISS-005): a fine-tune protocol whose inference weights follow training and whose new channels reach meaningful weight, for example a longer run or training the input layer first. Re-run radiation with it if step 1 is promising but weak.
+3. **Degree-days that see thaw days inside a month** (ISS-007), computed from daily ERA5 temperatures.
+4. **A leak-free ocean-memory input:** sunlight absorbed by the model's *own* open water, accumulated over the summer.
+
+**Targets** (out-of-sample, per member, development years 2019–22; confirmed on the 2023–25 holdout for the release candidate). The target is what a release needs; the stretch goal is a gap the size of the observational uncertainty (NSIDC products differ by ~0.1 M km²), which is where "as close as the data allow" lies.
+
+| measure | v0.2 baseline | target | stretch |
+| --- | --- | --- | --- |
+| September extent bias | +0.37 | ≤ +0.20 | ≤ +0.10 |
+| June extent bias | +0.52 | ≤ +0.30 | ≤ +0.15 |
+| July–September ice-edge error | 1.83 | ≤ 1.65 | ≤ 1.50 |
+| East Siberian / Beaufort September bias | +0.20 / +0.21 | ≤ +0.10 each | ≤ +0.05 each |
+| drift growth | +0.34 | ≤ +0.15 | ≤ +0.05 |
+
+**Guardrails:** September correlation ≥ 0.85; December–March ice-edge error ≤ 0.95; one-month skill within 2 points of the v0.3 scorecard on every variable; the 2015–2100 CMIP run stays finite; gains survive the leak test. A model that needs inputs CMIP doesn't have yet (radiation) can still be the release model for hindcasts, but the artwork needs those inputs added first (ISS-008).
+
+**Done when:** a model meets the targets and guardrails and becomes the recommended model. If none does, v0.4.0 still ships the tooling and the write-ups, and the targets carry forward, stated as unmet.
+
+## v0.5.0 — First artwork release
 
 **Why:** the art–science deliverable, from the release model, reproducibly.
 
@@ -67,7 +91,7 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 **Done when:** the rendered files and the commands that made them are recorded in an `experiments/` entry, with the checkpoint's SHA-256.
 
-## v0.5.0 — Data for live visuals (p5.js, TouchDesigner)
+## v0.6.0 — Data for live visuals (p5.js, TouchDesigner)
 
 **Why:** the predictions as playable material for creative-coding tools, not only as rendered video: the fields themselves and their motion, in formats those tools read directly.
 
@@ -98,30 +122,6 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 **Done when:** a p5.js sketch and a TouchDesigner network each play the 2015–2100 export (fields, particles and edge), documented end to end.
 
-## v0.6.0 — Summer melt on the Pacific shelf
-
-**Why:** the model's own largest error: too little summer melt in the East Siberian and Beaufort seas, growing over a run (ISS-002).
-
-**Work**
-- Finish the radiation attribution (ISS-004).
-- Make new inputs learnable: a fine-tune protocol whose inference weights actually follow training (ISS-005), and a check that new channels reach meaningful weight (ISS-003).
-- Degree-day features that see thaw days inside a month (ISS-007).
-- A leak-free ocean-memory input: sunlight absorbed by the model's *own* open water, accumulated over the summer.
-
-**Targets** (out-of-sample, per member, development years 2019–22; confirmed on the 2023–25 holdout for the release candidate):
-
-| measure | v0.2 baseline | target |
-| --- | --- | --- |
-| September extent bias | +0.37 | ≤ +0.20 |
-| June extent bias | +0.52 | ≤ +0.30 |
-| July–September ice-edge error | 1.83 | ≤ 1.65 |
-| East Siberian / Beaufort September bias | +0.20 / +0.21 | ≤ +0.10 each |
-| drift growth | +0.34 | ≤ +0.15 |
-
-**Guardrails:** September correlation ≥ 0.85; December–March ice-edge error ≤ 0.95; one-month skill within 2 points of the v0.3 scorecard on every variable; the 2015–2100 CMIP run stays finite; gains survive the leak test.
-
-**Done when:** a model meets the targets and guardrails and becomes the recommended model. If none does, v0.6.0 still ships the tooling and the write-ups, and the targets carry forward, stated as unmet.
-
 ## v0.7.0 — Projections with a spread
 
 **Why:** one climate model gives one possible future; a few give a range.
@@ -137,7 +137,7 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 
 1.0 means someone else can rely on it:
 - A clean clone rebuilds every dataset with the documented, scripted downloads.
-- The recommended model meets the v0.6.0 targets, or a documented waiver says why not.
+- The recommended model meets the v0.4.0 targets, or a documented waiver says why not.
 - The scorecard is published with the release.
 - The command-line tools, configs and `frazil` package are stable: from here on, breaking changes need a new major version.
 - Fast and slow tests pass.

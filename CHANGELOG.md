@@ -4,6 +4,14 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+### Added
+- `configs/experiment/pf_qm_ema.yaml` and model `monthly_pf_qm_ema`: `monthly_pf_qm` fine-tuned 20k more steps at EMA 0.999. Out of sample it cuts September bias +0.37 → +0.22 and summer ice-edge error 1.83 → 1.46, matching the radiation model without radiation (closes ISS-005); the new v0.4.0 candidate.
+- `copernicusmarine` in `environment-mac.yml`, and ISS-022: the neXtSIM reanalysis checked as a possible training teacher (better in September, worse in other seasons; parked).
+- Radiation experiment scored (closes ISS-004): `monthly_pf_qm_rad` cuts September bias +0.37 → +0.20 and summer ice-edge error 1.83 → 1.45, but climatological radiation scores the same, so the gain comes from the EMA 0.999 fine-tune, not radiation.
+
+### Changed
+- Roadmap: the summer-melt milestone moves up to v0.4.0 (*Close the summer gap*), straight after the scorecard, with stretch targets at the size of the observational uncertainty; the artwork and live-visuals milestones become v0.5.0 and v0.6.0.
+
 ## [0.2.0] — 2026-10-07
 
 The restructure release: a reorganised, tested and documented codebase with a plan to 1.0. Model behaviour is unchanged from 0.1.0; the recommended model is `monthly_pf_qm` (checkpoint SHA-256 `6208b4a8…ce71a`, see [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)). Commands moved: see *Changed*.

@@ -1,0 +1,33 @@
+# @package _global_
+# Control for the radiation fine-tune: exactly pf_qm_rad without the two
+# radiation channels (24 inputs, as monthly_pf_qm).
+#
+# Why: monthly_pf_qm_rad beat monthly_pf_qm (Sept bias +0.37 -> +0.20, Jul-Sep
+# ice-edge error 1.83 -> 1.45), but climatological radiation scored the same, so
+# the gain is probably the fine-tune itself: 20k more steps with ema_rate 0.999,
+# so the inference weights finally leave the icy-target seed monthly_pf (ISS-005).
+# If this run matches it, it needs no new inputs and can run CMIP projections.
+# See experiments/2026-09-28_radiation_channel/.
+#
+# Score after:  freerun hindcast (--forcing era5 --start 2018-12 --years 7
+#               --n-ens 8 --save-members) and the same scoring as the radiation runs.
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema
+defaults:
+  - pushforward
+  - _self_
+
+exp_name: monthly_pf_qm_ema
+init_from: data/models/monthly_pf_qm/last.ckpt
+
+surrogate:
+  total_steps: 20000
+  pushforward_prob: 0.8
+  pushforward_substeps: 10
+  ema_rate: 0.999
+
+data:
+  suffix: _sicqm
+
+trainer:
+  max_steps: 20000
