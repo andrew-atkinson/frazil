@@ -13,7 +13,7 @@ Before 1.0 the order of milestones can change. Change this file in the same bran
 
 ## The scorecard
 
-A fixed protocol, so numbers compare across versions. It becomes a tool in v0.3.0 (`scripts/evaluate/scorecard.py`, writing `results/scorecards/<model>.json` and a ledger entry); until then the numbers below come from the hand-run scoring recorded in [experiments/](../experiments/README.md).
+A fixed protocol, so numbers compare across versions. The tool is `scripts/evaluate/scorecard.py` (scorecard version 1, added 2026-10-15), writing `results/scorecards/<model>.json` and a ledger entry. It reproduces the hand-run v0.2.0 baseline below exactly. Not yet automated: the multi-month rollout skill and cost.
 
 1. **Forecast skill, validation years 2015–2018:** one-month skill against persistence and climatology for each of the six variables (`eval_monthly.py`, 8 members); multi-month skill against climatology at leads of 1, 3, 6 and 12 months (`rollout_monthly.py`, fixed start months).
 2. **Out-of-sample hindcast:** a free-run from the December 2018 state under real ERA5 weather to 2025, 8 members saved, scored per member against NSIDC-0051: September, June, July and August extent bias; ice-edge error (IIEE) for September, July–September and December–March; the year-to-year correlation of September extent; drift growth (September bias in the last three years minus the first three); September bias in the East Siberian, Beaufort, Chukchi and Laptev seas. Reported for the development years (2019–22) and, for release candidates, the holdout (2023–25).
@@ -59,7 +59,7 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 **Why:** the model's largest error, and the one between it and the observations: too little summer melt, mostly its own in the East Siberian and Beaufort seas, growing over a run (ISS-002). It comes before the artwork so the animations show the better model. (Moved up from v0.6.0 on 2026-10-09.)
 
 **Work**, cheapest first:
-1. ~~**Confirm the fine-tune gain.**~~ Done 2026-10-10: the control `monthly_pf_qm_ema` (same fine-tune, no radiation) matches the radiation model, so the gain is the fine-tune (ISS-005 closed). It is the v0.4.0 candidate; on 2019–22 it meets the September bias and summer ice-edge targets, not June (+0.64), East Siberian (+0.19) or drift growth (+0.32). Still to check for it: one-month skill and a finite 2015–2100 CMIP run.
+1. ~~**Confirm the fine-tune gain.**~~ Done 2026-10-10: the control `monthly_pf_qm_ema` (same fine-tune, no radiation) matches the radiation model, so the gain is the fine-tune (ISS-005 closed). It is the v0.4.0 candidate; on 2019–22 it meets the September bias and summer ice-edge targets, not June (+0.64), East Siberian (+0.19) or drift growth (+0.32). One-month skill holds (within 1.5 points on every variable, concentration +10 against its QM targets). Its 2015–2100 CMIP run is finite. It meets every guardrail, so it becomes the recommended model once the targets are met or waived at release.
 2. **Make new inputs learnable** (ISS-003, ISS-005): a fine-tune protocol whose inference weights follow training and whose new channels reach meaningful weight, for example a longer run or training the input layer first. Re-run radiation with it if step 1 is promising but weak.
 3. **Degree-days that see thaw days inside a month** (ISS-007), computed from daily ERA5 temperatures.
 4. **A leak-free ocean-memory input:** sunlight absorbed by the model's *own* open water, accumulated over the summer.
