@@ -19,7 +19,7 @@ scripts/download/era5.py  ───┼─▶ preprocess_monthly.py ─▶ data/t
 scripts/download/cmip.py ────┴─▶ preprocess_cmip.py ────▶ data/train_data/cmip_datacube/       │
                           (regrid + BIAS-CORRECT)  (future forcing, 2015-2100)          │
                                                                                         ▼
-   eval_monthly.py · predict_monthly.py · rollout_monthly.py   (skill / maps)
+   eval_monthly.py · predict_monthly.py · rollout_monthly.py · scorecard.py   (skill / maps / scorecard)
    freerun_monthly.py                                                                   (decadal projection)
 ```
 
@@ -271,6 +271,8 @@ python scripts/evaluate/eval_monthly.py --n-ens 8
 | `--max-pairs` | `0` | cap month-pairs (0 = all) |
 | `--n-ens` | `1` | ensemble members; the mean is scored (see *Ensemble mean*) |
 
+**Resumable.** Progress is saved after every month pair (`eval_monthly_progress_<hash>.json` in the checkpoint's folder); re-run the same command to continue. Each pair has its own seed, so a resumed run gives exactly the uninterrupted result. To start over, delete that file.
+
 ### `scripts/evaluate/predict_monthly.py` — one forecast, as maps
 Predicts one target month and plots, per variable, **truth | GenSIM | persistence** maps. The visual "does the forecast look like reality" check.
 
@@ -284,6 +286,20 @@ python scripts/evaluate/predict_monthly.py --target-year 2018 --target-month 3
 | `--target-month` | `3` | month to forecast (input = previous month) |
 | `--n-ens` | `8` | ensemble members (mean) |
 | `--out-png` | `plots/forecast_maps.png` | output figure |
+
+### `scripts/evaluate/scorecard.py` — the scorecard (fixed protocol)
+Scores a model's 2019–25 ERA5 hindcast per member against NSIDC-0051 with the measures in [ROADMAP.md](ROADMAP.md#the-scorecard): extent bias (Sep, Jun, Jul, Aug), ice-edge error (Sep, Jul–Sep, Dec–Mar), September correlation, drift growth, September bias by sector. Development years 2019–22 always; `--holdout` adds 2023–25 and 2019–25 (release candidates only). Pulls the model's latest 8-member one-month skill (`eval_monthly.py`) and CMIP stability (`freerun_monthly.py --forcing cmip`) from the ledger, records the checkpoint's SHA-256, writes `results/scorecards/<model>.json` (committed) and logs a ledger entry.
+
+```bash
+python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema --holdout
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--model` | — | folder name in `data/models` (required) |
+| `--hindcast` | `plots/freerun/snapshots/<model>_era5_2018` | folder of `members_YYYYMM.nc` (from `freerun_monthly.py --forcing era5 --start 2018-12 --years 7 --n-ens 8 --save-members`) |
+| `--holdout` | off | also score 2023–25 and 2019–25 |
+| `--obs` | `data/obs/nsidc0051_grid` | observations on the model grid |
+| `--out` | `results/scorecards/<model>.json` | scorecard file |
 
 ### `scripts/evaluate/rollout_monthly.py` — multi-start skill vs lead
 Free-runs from several start months (feeding the model its **own** output back with real forcings), capped at `--max-lead`, and pools squared error across starts by lead. Reports skill vs **persistence** *and* vs **climatology** (average-that-month) — the honest long-lead bar.
@@ -333,6 +349,8 @@ python scripts/project/freerun_monthly.py --forcing era5 --start 2018-12 --years
 | `--climatology-forcing` | none | `era5` only: replace the named forcing channels (e.g. `sst`) with their 1995–2014 calendar-month mean — a leak test: if skill collapses without the year-specific values, the model was reading them rather than learning physics. Output tagged `_clim-<vars>` |
 
 **Outputs:** `freerun_<forcing>.csv` (diagnostics), `freerun_<forcing>.png` (4-panel diagnostics), `freerun_<forcing>_map.png` (6-variable map of the final month), and `snapshots/<model>_<forcing>/state_YYYYMM.nc` (full spatial states — what maps/animations are built from, namespaced by checkpoint+forcing so runs never overwrite each other; `era5` runs also carry the start year, e.g. `monthly_pf_era5_2018`; the run prints the exact folder). With a January start, `--snapshot-every 12` lands on winter maxima; use `--snapshot-every 1` (or `--start 2015-09`) to capture the September minimum for a shrinking-ice animation.
+
+**Resumable.** After every month the run saves the full ensemble state and its diagnostics so far to `<out-dir>/freerun_<tag>_resume.pt` (about 6 MB per member). Re-run the same command to continue; it's deleted when the run ends. Each month has its own seed, so a resumed run gives exactly the uninterrupted result. A resume file from different settings (or a retrained checkpoint) is ignored and the run starts over.
 
 **Reading it:** the *sharpness* panel is the key failure detector — decay toward 0 = smoothing to mush (classic autoregressive collapse). Under cyclic forcing a stable repeating sawtooth is the good outcome *and* the ceiling (no trend to respond to). Only the CMIP run can show climate decline.
 

@@ -91,3 +91,40 @@ def test_animation_frame_types(summary, tmp_path):
 def test_report_from_another_folder(tmp_path):
     need("results/experiments.jsonl")
     run([os.path.join(ROOT, "scripts/evaluate/results_report.py")], cwd=tmp_path)
+
+
+def test_freerun_resumes_exactly(tmp_path, monkeypatch):
+    """Interrupt a free-run partway, re-run the same command: same result as one uninterrupted run."""
+    need(MODEL, "data/train_data/monthly_datacube")
+    import importlib.util
+    import frazil.models as E
+    spec = importlib.util.spec_from_file_location("freerun", os.path.join(ROOT, "scripts/project/freerun_monthly.py"))
+    fr = importlib.util.module_from_spec(spec); spec.loader.exec_module(fr)
+    args = lambda out: ["--ckpt", MODEL, "--forcing", "era5", "--start", "2016-01", "--years", "1", "--n-ens", "2",
+                        "--fast", "--snapshot-every", "6", "--save-members", "--no-log", "--no-map", "--out-dir", str(out)]
+    monkeypatch.chdir(ROOT)
+    fr.main(args(tmp_path / "full"))
+
+    real_load = E.load_model
+    def interrupting_load(*a, **k):                      # the model stops after 5 months
+        m = real_load(*a, **k); fwd, calls = m.forward, [0]
+        def forward(*fa, **fk):
+            calls[0] += 1
+            if calls[0] > 5:
+                raise KeyboardInterrupt
+            return fwd(*fa, **fk)
+        m.forward = forward
+        return m
+    monkeypatch.setattr(E, "load_model", interrupting_load)
+    with pytest.raises(KeyboardInterrupt):
+        fr.main(args(tmp_path / "resumed"))
+    assert glob.glob(f"{tmp_path}/resumed/freerun_*_resume.pt")
+    monkeypatch.setattr(E, "load_model", real_load)
+    fr.main(args(tmp_path / "resumed"))
+
+    assert not glob.glob(f"{tmp_path}/resumed/freerun_*_resume.pt")
+    a, b = (pd.read_csv(glob.glob(f"{tmp_path}/{d}/freerun_*.csv")[0]).drop(columns="wall_s") for d in ("full", "resumed"))
+    pd.testing.assert_frame_equal(a, b)
+    for f in sorted(glob.glob(f"{tmp_path}/full/snapshots/*/members_*.nc")):
+        g = f.replace("/full/", "/resumed/")
+        np.testing.assert_array_equal(xr.open_dataset(f).sic.values, xr.open_dataset(g).sic.values)

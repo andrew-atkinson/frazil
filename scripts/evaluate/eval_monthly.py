@@ -9,12 +9,19 @@ state[t+1] from truth state[t] + forcings, compare to truth. Baseline =
 persistence (state[t+1] == state[t]). Reports RMSE over ocean cells per variable
 and the skill score 1 - rmse_model/rmse_persistence (>0 means beats persistence).
 
+Resumable: progress is saved after every month pair to
+<ckpt folder>/eval_monthly_progress_<settings hash>.json, and re-running the same
+command continues from there (deleted when the run completes). Each pair draws
+from its own seed, so a resumed run gives exactly the uninterrupted result.
+
 Run:  python scripts/evaluate/eval_monthly.py --ckpt data/models/monthly/last-v3.ckpt
 """
 from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
+import json
 import os
 
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
@@ -32,7 +39,7 @@ from frazil.models import load_model, default_ckpt, load_val_cube, model_tag  # 
 from frazil import paths
 
 
-def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
+def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, state_file=None, seed=42):
     """One-month-ahead RMSE over ocean per state var. Returns {var: (rmse_model,
     rmse_persistence)}. With n_ens>1, GenSIM is a generative ensemble -- draw
     n_ens members (the batch dim) and use the ensemble MEAN, which cancels
@@ -57,8 +64,14 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
         n = min(n, max_pairs)
     se_model = {v: 0.0 for v in STATES}
     se_pers = {v: 0.0 for v in STATES}
-    count = 0
-    for t in range(n):
+    count, start = 0, 0
+    if state_file and os.path.exists(state_file):
+        with open(state_file) as fh:
+            st = json.load(fh)
+        se_model, se_pers, count, start = st["se_model"], st["se_pers"], st["count"], st["next_t"]
+        print(f"[resume] {start}/{n} month pairs already done ({state_file})")
+    for t in range(start, n):
+        torch.manual_seed(seed + t)  # per-pair seed: resuming reproduces the uninterrupted run
         states = rep(torch.as_tensor(arr(t, STATES)[None], device=device, dtype=torch.float32))
         forc = np.stack([arr(t, model.forcing_names), arr(t + 1, model.forcing_names)])  # (2,F,H,W)
         forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
@@ -72,8 +85,14 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1):
             se_model[v] += float(((pred[i] - truth[i]) ** 2)[ocean].sum())
             se_pers[v] += float(((persist[i] - truth[i]) ** 2)[ocean].sum())
         count += int(ocean.sum())
+        if state_file:
+            with open(state_file + ".tmp", "w") as fh:
+                json.dump({"next_t": t + 1, "se_model": se_model, "se_pers": se_pers, "count": count}, fh)
+            os.replace(state_file + ".tmp", state_file)
         if progress:
             print(f"  month-pair {t+1}/{n} done", end="\r", flush=True)
+    if state_file and os.path.exists(state_file):
+        os.remove(state_file)
     return {v: ((se_model[v] / count) ** 0.5, (se_pers[v] / count) ** 0.5)
             for v in STATES}
 
@@ -100,7 +119,10 @@ def main(argv=None):
     cube = load_val_cube(args.datacube, args.val_start_year)
     aux = xr.open_dataset(args.aux)
     print(f"[data] {cube.sizes['time']} val months  (n_ens={args.n_ens})")
-    rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens)
+    key = json.dumps([os.path.abspath(ckpt), os.path.getmtime(ckpt), os.path.abspath(args.datacube),
+                      args.val_start_year, args.max_pairs, args.n_ens])
+    state_file = os.path.join(os.path.dirname(ckpt), f"eval_monthly_progress_{hashlib.sha1(key.encode()).hexdigest()[:10]}.json")
+    rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens, state_file=state_file)
 
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
     print(f"  {'var':5s} {'GenSIM':>10s} {'persistence':>12s} {'skill':>8s}")

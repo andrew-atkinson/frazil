@@ -14,6 +14,11 @@ Forcing past 2018 is either the cyclically-repeated 2015-2018 real forcing
 the CMIP scenario forcing (--forcing cmip; a real future trend but
 BIAS-UNCORRECTED vs the ERA5 the model was trained on -- see preprocess_cmip.py).
 
+Resumable: after every month the full ensemble state and the diagnostics so far
+are saved to <out-dir>/freerun_<tag>_resume.pt; re-running the same command
+continues from there (deleted when the run ends). Each month draws from its own
+seed, so a resumed run gives exactly the uninterrupted result.
+
 Run:  python scripts/project/freerun_monthly.py --years 15 --fast
 """
 from __future__ import annotations
@@ -21,6 +26,8 @@ from __future__ import annotations
 import argparse
 import csv
 import glob
+import hashlib
+import json
 import os
 import re
 import sys
@@ -230,9 +237,25 @@ def main(argv=None):
     rows.append(d0)
     sm = states_r[t0]
     last_date = base_date
+    # Resume: same settings (and same checkpoint file) -> continue from the last saved month.
+    settings = {k: v for k, v in vars(args).items() if k not in ("note", "no_log", "no_map")}
+    settings["ckpt_mtime"] = os.path.getmtime(ckpt)
+    key = hashlib.sha1(json.dumps(settings, sort_keys=True, default=str).encode()).hexdigest()
+    resume_file = os.path.join(args.out_dir, f"freerun_{tag}_resume.pt")
+    k_start = 0
+    if os.path.exists(resume_file):
+        saved = torch.load(resume_file, weights_only=False)
+        if saved["key"] == key:
+            k_start, rows, last_date = saved["k"], saved["rows"], saved["last_date"]
+            state = saved["state"].to(device)
+            sm = state.mean(0).cpu().numpy()
+            print(f"[resume] {k_start}/{nsteps} months already done ({resume_file})", flush=True)
+        else:
+            print(f"[resume] {resume_file} is from different settings -- starting over", flush=True)
     t_start = time.time()
-    for k in range(nsteps):
+    for k in range(k_start, nsteps):
         t_step = time.time()
+        torch.manual_seed(42 + k)  # per-month seed: resuming reproduces the uninterrupted run
         fa, fb, dd = forc_pair(k)
         forc = rep(torch.as_tensor(np.stack([fa, fb])[None], device=device, dtype=torch.float32))
         ddt = rep(torch.as_tensor(dd[None], device=device, dtype=torch.float32))
@@ -252,7 +275,7 @@ def main(argv=None):
         d["wall_s"] = time.time() - t_step
         rows.append(d)
         elapsed = time.time() - t_start
-        rate = elapsed / (k + 1)                       # mean s/step so far
+        rate = elapsed / (k + 1 - k_start)             # mean s/step this session
         eta = rate * (nsteps - k - 1)
         print(f"  yr {d['year']:5.2f}  mon {month_of(k):2d}  "
               f"sit={d['mean_sit']:.3f} sic={d['mean_sic']:.3f} "
@@ -270,11 +293,16 @@ def main(argv=None):
                             for v in mvars}).to_netcdf(
                     os.path.join(snap_dir, f"members_{last_date:%Y%m}.nc"),
                     encoding={v: {"zlib": True, "complevel": 4} for v in mvars})
+        torch.save({"key": key, "k": k + 1, "state": state.cpu(), "rows": rows, "last_date": last_date},
+                   resume_file + ".tmp")
+        os.replace(resume_file + ".tmp", resume_file)
         if last_nonfinite:
             print(f"\n[freerun] non-finite at year {d['year']:.2f} -- stopping"); break
+    if os.path.exists(resume_file):
+        os.remove(resume_file)
 
     total = time.time() - t_start
-    done = len(rows) - 1
+    done = len(rows) - 1 - k_start  # steps run in this session
     summary = (f"{pd.Timestamp.now():%Y-%m-%d %H:%M}  {args.forcing}  {done} steps  "
                f"n_ens={args.n_ens} fast={args.fast}  {total/60:.1f} min total  "
                f"{total/max(done,1):.2f} s/step")

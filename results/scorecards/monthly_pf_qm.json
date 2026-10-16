@@ -1,0 +1,83 @@
+{
+ "scorecard_version": 1,
+ "model": "monthly_pf_qm",
+ "checkpoint_sha256": "6208b4a82a7f8693776a4ff04c228e1a8c14d042e2b19edb0275df9dfd3ce71a",
+ "hindcast_dir": "plots/freerun/snapshots/monthly_pf_qm_era5_2018",
+ "hindcast": {
+  "development_2019_22": {
+   "sep_bias": 0.27,
+   "jun_bias": 0.544,
+   "jul_bias": 0.337,
+   "aug_bias": 0.078,
+   "iiee_sep": 1.408,
+   "iiee_jas": 1.759,
+   "iiee_djfm": 0.907,
+   "sep_r": 0.947,
+   "drift_growth": 0.206,
+   "drift_growth_years": "2021-2022 minus 2019-2020",
+   "sep_bias_east_siberian": 0.256,
+   "sep_bias_beaufort": 0.063,
+   "sep_bias_chukchi": 0.147,
+   "sep_bias_laptev": -0.089,
+   "years": "2019-2022",
+   "members": 8,
+   "months_scored": 48
+  },
+  "holdout_2023_25": {
+   "sep_bias": 0.503,
+   "jun_bias": 0.486,
+   "jul_bias": 0.209,
+   "aug_bias": 0.423,
+   "iiee_sep": 1.69,
+   "iiee_jas": 1.933,
+   "iiee_djfm": 0.961,
+   "sep_r": 0.682,
+   "drift_growth": 0.142,
+   "drift_growth_years": "2025-2025 minus 2023-2023",
+   "sep_bias_east_siberian": 0.129,
+   "sep_bias_beaufort": 0.404,
+   "sep_bias_chukchi": 0.18,
+   "sep_bias_laptev": -0.141,
+   "years": "2023-2025",
+   "members": 8,
+   "months_scored": 36
+  },
+  "all_2019_25": {
+   "sep_bias": 0.37,
+   "jun_bias": 0.519,
+   "jul_bias": 0.282,
+   "aug_bias": 0.226,
+   "iiee_sep": 1.529,
+   "iiee_jas": 1.833,
+   "iiee_djfm": 0.93,
+   "sep_r": 0.861,
+   "drift_growth": 0.34,
+   "drift_growth_years": "2023-2025 minus 2019-2021",
+   "sep_bias_east_siberian": 0.202,
+   "sep_bias_beaufort": 0.209,
+   "sep_bias_chukchi": 0.161,
+   "sep_bias_laptev": -0.111,
+   "years": "2019-2025",
+   "members": 8,
+   "months_scored": 84
+  }
+ },
+ "one_month_skill": {
+  "run_id": "db61e12a591e",
+  "datacube": "data/train_data/monthly_datacube_sicqm",
+  "n_ens": 8,
+  "skill_vs_persistence": {
+   "sic": 0.478,
+   "sid": 0.488,
+   "sit": 0.524,
+   "siu": 0.553,
+   "siv": 0.55,
+   "snt": 0.624
+  }
+ },
+ "cmip_stability": {
+  "run_id": "d556f1e3105f",
+  "years_completed": 85.0,
+  "nonfinite_total": 0
+ }
+}

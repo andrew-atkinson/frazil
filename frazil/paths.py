@@ -32,3 +32,6 @@ CONFIG_TRAIN = "configs/config_train_monthly_mac.yaml"
 # Outputs (never committed).
 FREERUN_OUT = "plots/freerun"
 SNAPSHOTS = "plots/freerun/snapshots"
+
+# Scorecards (committed: the record of each model's measured performance).
+SCORECARDS = "results/scorecards"
