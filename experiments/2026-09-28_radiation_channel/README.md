@@ -45,7 +45,7 @@ The model is much better than `monthly_pf_qm` (September bias nearly halved, sum
 
 What else differs from `monthly_pf_qm`: 20k more steps of the same training (pushforward on QM targets) with **EMA 0.999 instead of 0.9999**. `monthly_pf_qm`'s inference weights still held 37% of its seed `monthly_pf`, which was trained on the icy original targets (ISS-005); here they follow the QM training. The likely explanation is that `monthly_pf_qm` was never fully de-iced, and this run finished the job.
 
-June got worse (+0.52 → +0.65), the one measure that did.
+June bias got worse (+0.52 → +0.65), the one measure that did. (Later found to be lost cancellation, not worse ice: the control's June ice-edge error fell 1.57 → 1.36; see ISS-023.)
 
 ## Control (2026-10-10)
 `configs/experiment/pf_qm_ema.yaml`: the same fine-tune without the radiation channels (24 inputs).
@@ -71,7 +71,7 @@ The control matches the radiation model within 0.07 on every measure (within 0.0
 Within 1.5 points on every variable except concentration, which gains 10 points (it now follows its QM targets), so the one-month-skill guardrail holds. An earlier 1-member run against the original neXtSIM targets showed drops of 3–6 points on the other variables; with 8 members against the right targets they are within noise.
 
 ## Conclusion
-Radiation as an input: no measurable effect at this training length (and no leak). The improvement comes from the fine-tune protocol, confirmed by the control. `monthly_pf_qm_ema` needs no new inputs, so it can run CMIP projections; it is the v0.4.0 candidate. On the development years (2019–22) it meets the September bias target (+0.12 ≤ +0.20) and July–September ice-edge error (1.42, past the 1.50 stretch goal); not June (+0.64), East Siberian September (+0.19) or drift growth (+0.32). One-month skill holds (above).
+Radiation as an input: no measurable effect at this training length (and no leak). The improvement comes from the fine-tune protocol, confirmed by the control. `monthly_pf_qm_ema` needs no new inputs, so it can run CMIP projections; it is the v0.4.0 candidate. On the development years (2019–22) it meets the September bias target (+0.12 ≤ +0.20) July–September ice-edge error (1.42, past the 1.50 stretch goal) and June ice-edge error (1.36 ≤ 1.41, the June target since 2026-10-15); not East Siberian September (+0.19) or drift growth (+0.32). One-month skill holds (above).
 
 **CMIP projection** (MPI-ESM1-2-LR ssp245, 2 members, 2015–2100): no non-finite values in 1,020 months, so the stability guardrail holds. September extent, mean of the members' own extents, M km²:
 

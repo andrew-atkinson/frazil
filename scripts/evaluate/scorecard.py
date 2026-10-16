@@ -6,7 +6,7 @@ The scorecard (docs/ROADMAP.md): one fixed protocol so models compare across ver
 Scores a model's out-of-sample ERA5 hindcast (free-run from the December 2018 state,
 members saved) per member against NSIDC-0051 on the model grid:
   extent bias for September, June, July, August (M km^2)
-  ice-edge error (IIEE) for September, July-September, December-March (M km^2)
+  ice-edge error (IIEE) for September, June, July-September, December-March (M km^2)
   September year-to-year correlation of the members' mean extent with the observed
   drift growth: September bias of the last two/three years minus the first two/three
   September bias by sector: East Siberian, Beaufort, Chukchi, Laptev
@@ -34,7 +34,7 @@ import xarray as xr
 import frazil.ledger as RL
 from frazil import paths
 
-VERSION = 1
+VERSION = 2   # 2: adds June ice-edge error (2026-10-15)
 THR = 0.15
 SECTORS = {"Barents/Kara": (20, 90), "Laptev": (90, 140), "East Siberian": (140, 180), "Chukchi": (180, 205),
            "Beaufort": (205, 240), "Canadian/Baffin/Hudson": (240, 300), "Greenland": (300, 380)}
@@ -68,7 +68,7 @@ def scores(df):
     years = sorted(yr.index)
     n = max(1, len(years) // 2) if len(years) < 6 else 3
     out = {f"{name}_bias": round(float(g([m]).ext.mean()), 3) for name, m in [("sep", 9), ("jun", 6), ("jul", 7), ("aug", 8)]}
-    out.update({"iiee_sep": float(sep.iiee.mean()), "iiee_jas": float(g([7, 8, 9]).iiee.mean()),
+    out.update({"iiee_sep": float(sep.iiee.mean()), "iiee_jun": float(g([6]).iiee.mean()), "iiee_jas": float(g([7, 8, 9]).iiee.mean()),
                 "iiee_djfm": float(g([12, 1, 2, 3]).iiee.mean()),
                 "sep_r": float(np.corrcoef(yr.model_ext, yr.obs_ext)[0, 1]) if len(years) > 2 and yr.obs_ext.std() > 0 else None,
                 "drift_growth": float(yr.ext.loc[years[-n:]].mean() - yr.ext.loc[years[:n]].mean()),

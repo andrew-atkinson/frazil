@@ -13,6 +13,7 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ### Changed
 - `eval_monthly.py` is resumable: re-running the same command continues from the last finished month pair, with exactly the same result (each pair now has its own seed, so scores differ slightly from earlier runs of the same model).
 - `freerun_monthly.py` is resumable: re-running the same command continues from the last finished month, with exactly the same result (each month now has its own seed, so results differ slightly from earlier runs of the same settings).
+- Roadmap: the v0.4.0 June target is June ice-edge error (≤ 1.41, stretch ≤ 1.29) instead of June extent bias, which rose for a model whose June ice got more accurate (ISS-023). Scorecard version 2 adds June ice-edge error; both scorecards re-scored.
 - Roadmap: the summer-melt milestone moves up to v0.4.0 (*Close the summer gap*), straight after the scorecard, with stretch targets at the size of the observational uncertainty; the artwork and live-visuals milestones become v0.5.0 and v0.6.0.
 
 ## [0.2.0] — 2026-10-07
