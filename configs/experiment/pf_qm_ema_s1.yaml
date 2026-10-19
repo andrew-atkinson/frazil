@@ -1,0 +1,19 @@
+# @package _global_
+# Training-to-training variation: exactly pf_qm_ema (seeded from monthly_pf_qm,
+# 20k steps at EMA 0.999), retrained with an explicit seed.
+#
+# Why: pf_qm_ema2 (20k more steps) moved the July-August extent by +0.1 to +0.35
+# M km^2 while the ice-edge error stayed flat, which suggests the summer melt rate
+# is barely constrained by the data. If this retrain's summer bias also differs
+# from monthly_pf_qm_ema by ~0.2, differences that size between single runs are
+# noise. (Earlier runs had seed: 0, which train.py skips, so they were unseeded.)
+#
+# After:  the ERA5 hindcast, then  python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema_s1
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_s1
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema_s1
+seed: 1

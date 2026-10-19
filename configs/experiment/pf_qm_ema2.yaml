@@ -1,0 +1,21 @@
+# @package _global_
+# Does more of the same fine-tune keep improving? monthly_pf_qm_ema + another 20k
+# steps of exactly the pf_qm_ema recipe (QM targets, pushforward 0.8 / 10 substeps,
+# EMA 0.999). Weights (and their EMA copy) come from monthly_pf_qm_ema; the
+# optimizer and learning-rate schedule restart, as they did for pf_qm_ema.
+#
+# Why: monthly_pf_qm -> monthly_pf_qm_ema (20k steps) cut September bias
+# +0.37 -> +0.22 and summer ice-edge error 1.83 -> 1.46. If this run improves
+# again, the cheapest lever isn't exhausted; if not, move on to new inputs.
+#
+# After:  the ERA5 hindcast (freerun --forcing era5 --start 2018-12 --years 7
+#         --n-ens 8 --save-members), then
+#         python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema2
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema2
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema2
+init_from: data/models/monthly_pf_qm_ema/last.ckpt

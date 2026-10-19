@@ -1,0 +1,30 @@
+{
+ "scorecard_version": 2,
+ "model": "monthly_pf_qm_ema2",
+ "checkpoint_sha256": "e1af954ebe232a1bc01205569c6703cb03ec89825c25f6d068383f1fd0f3b428",
+ "hindcast_dir": "plots/freerun/snapshots/monthly_pf_qm_ema2_era5_2018",
+ "hindcast": {
+  "development_2019_22": {
+   "sep_bias": 0.224,
+   "jun_bias": 0.688,
+   "jul_bias": 0.459,
+   "aug_bias": 0.318,
+   "iiee_sep": 1.193,
+   "iiee_jun": 1.338,
+   "iiee_jas": 1.404,
+   "iiee_djfm": 0.798,
+   "sep_r": 0.948,
+   "drift_growth": 0.09,
+   "drift_growth_years": "2021-2022 minus 2019-2020",
+   "sep_bias_east_siberian": 0.2,
+   "sep_bias_beaufort": 0.01,
+   "sep_bias_chukchi": 0.096,
+   "sep_bias_laptev": -0.054,
+   "years": "2019-2022",
+   "members": 8,
+   "months_scored": 48
+  }
+ },
+ "one_month_skill": null,
+ "cmip_stability": null
+}
