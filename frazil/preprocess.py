@@ -3,8 +3,13 @@ rotation into the grid frame, humidity (Magnus) and degree-day features.
 Used by the ERA5, CMIP, NSIDC and extra-channel preprocessing scripts.
 
 Degree-day windows are in MONTHS (AVG_LEN): pdd_month/fdd_month are the current
-month's rate and pdd_year/fdd_year a trailing 12-month mean -- a monthly analogue
-of GenSIM's daily degree-days (see docs/ISSUES.md ISS-007).
+month's rate and pdd_year/fdd_year a trailing 12-month mean. degree_days() works
+from monthly-mean temperature, so a month averaging below freezing counts no melt
+even with thaw days (ISS-007). degree_days_gaussian() catches them without daily
+data (GenSIM uses daily temperature): from the monthly mean and the
+typical day-to-day spread (standard deviation) of daily temperature in that calendar
+month, assuming daily temperatures within a month are normally distributed (the
+positive-degree-day method of Braithwaite 1985, Calov & Greve 2005).
 """
 from __future__ import annotations
 
@@ -12,6 +17,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from scipy.spatial import cKDTree
+from scipy.special import ndtr
 
 AVG_LEN = {"month": 1, "year": 12}
 T2M_THRESHOLD = 271.35  # K, ~ -1.8 C sea-ice freezing point (same as data_02)
@@ -150,6 +156,31 @@ def degree_days(t2m_tyx, times, avg_len=AVG_LEN, threshold=T2M_THRESHOLD):
             time=win, min_periods=win, center=False).mean("time")
         out[f"fdd_{suffix}"] = fdd.rolling(
             time=win, min_periods=win, center=False).mean("time")
+    return out
+
+
+def expected_degrees(mean, sigma, threshold=T2M_THRESHOLD):
+    """Mean daily positive and freezing degrees (K) when daily temperature is normal
+    with this mean and standard deviation: E[max(T-thr, 0)] and E[max(thr-T, 0)]."""
+    d = np.asarray(mean, np.float64) - threshold
+    s = np.maximum(np.asarray(sigma, np.float64), 1e-6)
+    z = d / s
+    phi = np.exp(-0.5 * z * z) / np.sqrt(2 * np.pi)
+    pdd = s * phi + d * ndtr(z)
+    return pdd, pdd - d                       # fdd = pdd - d, since max(x,0) - max(-x,0) = x
+
+
+def degree_days_gaussian(t2m_tyx, times, sigma_myx, avg_len=AVG_LEN, threshold=T2M_THRESHOLD):
+    """degree_days() from monthly-mean temperature plus sigma_myx, the day-to-day standard
+    deviation of daily temperature for each calendar month (12, y, x). Monthly rates from
+    expected_degrees(); the trailing windows average those rates, NaN until full."""
+    months = pd.DatetimeIndex(times).month.values - 1
+    pdd, fdd = expected_degrees(t2m_tyx, np.asarray(sigma_myx)[months], threshold)
+    out = {}
+    for name, x in (("pdd", pdd), ("fdd", fdd)):
+        da = xr.DataArray(x.astype(np.float32), dims=("time", "y", "x"), coords={"time": times})
+        for suffix, win in avg_len.items():
+            out[f"{name}_{suffix}"] = da.rolling(time=win, min_periods=win, center=False).mean("time")
     return out
 
 

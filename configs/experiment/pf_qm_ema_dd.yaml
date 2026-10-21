@@ -1,0 +1,25 @@
+# @package _global_
+# Degree-days that count thaw days (ISS-007): exactly pf_qm_ema_s1 (seeded from
+# monthly_pf_qm, 20k steps, EMA 0.999, seed 1), trained on datacubes whose four
+# degree-day inputs were rebuilt from the monthly mean plus the typical day-to-day
+# temperature spread (scripts/data/spread_degree_days.py), so a month that averages
+# below freezing still counts its thaw days. Same channel names, units and encoder
+# normalization; only their values differ, so the A/B partner is
+# monthly_pf_qm_ema_s1 (same seed).
+#
+# Prereq:  python scripts/data/degree_day_spread.py
+#          python scripts/data/spread_degree_days.py --datacube-dir data/train_data/monthly_datacube_sicqm
+#          python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqm_dd --suffix _sicqm_dd
+# After:   the ERA5 hindcast on the _dd cubes, then
+#          python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema_dd
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_dd
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema_dd
+seed: 1
+
+data:
+  suffix: _sicqm_dd

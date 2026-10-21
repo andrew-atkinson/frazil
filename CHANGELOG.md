@@ -5,6 +5,9 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ## [Unreleased]
 
 ### Added
+- `monthly_pf_qm_ema_dd` trained on the thaw-day degree-days (closes ISS-007): no effect beyond run-to-run noise. With a climatological spread the new inputs are a function of the monthly mean already in the inputs.
+- Degree-days that count thaw days (ISS-007): `frazil.preprocess.expected_degrees` / `degree_days_gaussian` (monthly mean plus the day-to-day spread of daily temperature, assuming a normal distribution), `scripts/data/degree_day_spread.py` (the spread from WeatherBench2's ERA5, with an accuracy check against real daily degree-days), `scripts/data/spread_degree_days.py` (rebuilds a datacube's degree-day inputs) and the recipe `pf_qm_ema_dd`. Daily ERA5 from the CDS was tried first and dropped: its queue would take days to weeks.
+- Noise between training runs, measured with a seeded retrain of `pf_qm_ema` (`monthly_pf_qm_ema_s1`): ~0.01 M km² on September bias and ice-edge errors, 0.05–0.08 on July–August bias; recorded in the roadmap's scorecard section.
 - `configs/experiment/pf_qm_ema2.yaml` and the [more_finetune](experiments/2026-10-18_more_finetune/) experiment: another 20k steps of the EMA fine-tune doesn't help (summer icier, ice edge unchanged); `monthly_pf_qm_ema` stays the candidate.
 - `scripts/evaluate/scorecard.py` (v0.3.0): the roadmap's scorecard as one command, with development/holdout split, one-month skill and CMIP stability from the ledger, and the checkpoint SHA-256; writes `results/scorecards/<model>.json`. Scorecards for `monthly_pf_qm` (reproduces the v0.2.0 baseline exactly) and `monthly_pf_qm_ema`.
 - `configs/experiment/pf_qm_ema.yaml` and model `monthly_pf_qm_ema`: `monthly_pf_qm` fine-tuned 20k more steps at EMA 0.999. Out of sample it cuts September bias +0.37 → +0.22 and summer ice-edge error 1.83 → 1.46, matching the radiation model without radiation (closes ISS-005); the new v0.4.0 candidate.

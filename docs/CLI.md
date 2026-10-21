@@ -150,6 +150,34 @@ python scripts/data/add_forcing_channels.py --era5-dir data/train_data/era5_extr
 
 A model with more forcings: add them to `data.forcing_variables` (appended after `tus huss uas vas`), set `surrogate.network.n_input` to `24 + 2 × (number added)`, insert each new variable's mean/std into `surrogate.encoder` after the 4th and after the 8th forcing entry, and build the zarr with `build_zarr_monthly.py --extra-forcings <vars>`. `init_from` a 4-forcing checkpoint zero-initialises the new input weights (`gensim.utils.expand_forcing_channels`), so step 0 reproduces the seed model exactly. Inference scripts read each run's forcing list from `data/models/<run>/.hydra/config.yaml`.
 
+### `scripts/data/degree_day_spread.py` — day-to-day temperature spread (for degree-days)
+The typical day-to-day spread (standard deviation) of daily 2 m temperature, per grid cell and calendar month, from ERA5 6-hourly data at 1.5° via WeatherBench2 (public Google Cloud, no account; cached as `data/train_data/wb2_daily_t2m.nc`, ~0.2 GB; the first run streams ~3 GB). Written to `data/auxiliary/t2m_daily_spread.nc` for `spread_degree_days.py`. `--check` instead reports, per calendar month, how well the monthly mean plus this spread reproduces degree-days from the real daily temperatures in years outside the climatology.
+
+```bash
+python scripts/data/degree_day_spread.py           # write the spread (1995-2014)
+python scripts/data/degree_day_spread.py --check   # accuracy against real daily degree-days, 2015-2022
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--clim-years` | `1995-2014` | years the spread is computed from |
+| `--check-years` | `2015-2022` | years for `--check` (WeatherBench2 ends January 2023) |
+| `--out` | `data/auxiliary/t2m_daily_spread.nc` | spread on the model grid, K, by calendar month |
+
+### `scripts/data/spread_degree_days.py` — degree-days that count thaw days
+Rebuilds the four degree-day inputs (`pdd_month`, `fdd_month`, `pdd_year`, `fdd_year`) from each month's mean temperature (the cube's `tus`) plus the day-to-day spread, assuming daily temperatures within a month are normally distributed, and writes a copy of a datacube folder with them replaced (`<dir>_dd`). The cubes' own degree-days use the monthly mean alone, so a month averaging below freezing counts no melt even with thaw days (ISS-007). Same names, units and threshold. The 11 months before a folder's first month come from the raw ERA5 monthly file (checked against the cube where both exist). Prints the old and new `pdd_month` by calendar month; writes the new channels' mean/std to `<out-dir>/degree_day_stats.json`.
+
+```bash
+python scripts/data/spread_degree_days.py --datacube-dir data/train_data/monthly_datacube_sicqm   # training targets -> _sicqm_dd
+python scripts/data/spread_degree_days.py --datacube-dir data/train_data/monthly_datacube         # states + forcing to 2018 -> _dd
+python scripts/data/spread_degree_days.py --datacube-dir data/train_data/era5_forcing_datacube    # 2019-25 forcing -> _dd
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--datacube-dir` | `data/train_data/monthly_datacube` | cubes to copy |
+| `--out-dir` | `<datacube-dir>_dd` | where the copies go |
+| `--spread` | `data/auxiliary/t2m_daily_spread.nc` | from `degree_day_spread.py` |
+| `--spinup-era5` | `data/train_data/data_stream-moda_stepType-avgua.nc` | raw ERA5 monthly file for the months before the cubes |
+
 ### `scripts/data/preprocess_cmip.py` — future forcing, **bias-corrected**
 Regrids the CMIP fields onto the same grid, rotates winds, then **bias-corrects each field against ERA5** (additive per-calendar-month, per-cell delta so CMIP's baseline climatology matches ERA5's), and recomputes degree-days from the *corrected* temperature. Writes `cmip_datacube_YYYY.nc` stamped with the correction baseline.
 

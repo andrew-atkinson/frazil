@@ -28,6 +28,10 @@ Licence: CC BY. Required acknowledgement: **"Generated using Copernicus Climate 
 
 Used: monthly averaged reanalysis, 40–90° N. 2 m temperature, 2 m dewpoint, surface pressure and 10 m winds for 1994–2025; sea-surface temperature and surface downward solar and thermal radiation for 1995–2025.
 
+ERA5 6-hourly 2 m temperature at 1.5° (1995–2022, for the day-to-day temperature spread behind the degree-day inputs) comes through WeatherBench 2:
+
+> Rasp, S., Hoyer, S., Merose, A., et al. (2024). WeatherBench 2: A benchmark for the next generation of data-driven global weather models. *Journal of Advances in Modeling Earth Systems*, 16, e2023MS004019. https://doi.org/10.1029/2023MS004019
+
 ### NSIDC-0051 sea-ice concentration — observations
 
 > DiGirolamo, N., Parkinson, C. L., Cavalieri, D. J., Gloersen, P. & Zwally, H. J. (2022). *Sea Ice Concentrations from Nimbus-7 SMMR and DMSP SSM/I-SSMIS Passive Microwave Data*. (NSIDC-0051, Version 2). [Data Set]. Boulder, Colorado USA. NASA National Snow and Ice Data Center Distributed Active Archive Center. https://doi.org/10.5067/MPYG15WAA4WX

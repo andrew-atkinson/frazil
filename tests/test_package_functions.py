@@ -118,3 +118,26 @@ def test_default_ckpt_prefers_monthly_then_newest_last(tmp_path):
     assert default_ckpt(str(tmp_path)).endswith("last-v1.ckpt")
     (tmp_path / "monthly.ckpt").write_text("c")
     assert default_ckpt(str(tmp_path)).endswith("monthly.ckpt")
+
+
+def test_expected_degrees_match_sampled_normal_days_and_the_no_spread_limit():
+    from frazil.preprocess import expected_degrees
+    rng = np.random.default_rng(0)
+    for mean, sd in [(268.0, 4.0), (271.35, 2.0), (275.0, 3.0)]:
+        days = rng.normal(mean, sd, 400_000)
+        pdd, fdd = expected_degrees(mean, sd)
+        assert pdd == pytest.approx(np.clip(days - 271.35, 0, None).mean(), abs=0.01)
+        assert fdd == pytest.approx(np.clip(271.35 - days, 0, None).mean(), abs=0.01)
+    pdd, fdd = expected_degrees(np.array([265.0, 280.0]), 0.0)          # no spread: the monthly-mean method
+    assert np.allclose(pdd, [0, 280 - 271.35]) and np.allclose(fdd, [271.35 - 265, 0])
+
+
+def test_degree_days_gaussian_counts_melt_in_a_cold_month():
+    from frazil.preprocess import degree_days_gaussian
+    times = pd.date_range("2000-01-01", periods=13, freq="MS") + pd.Timedelta(days=14)
+    t2m = np.full((13, 1, 1), 271.35 - 3.0)                             # every month averages below freezing
+    sigma = np.full((12, 1, 1), 4.0)
+    dd = degree_days_gaussian(t2m, times, sigma)
+    assert (dd["pdd_month"].values > 0.5).all()                        # warm days still melt
+    assert degree_days(t2m, times)["pdd_month"].values.max() == 0       # the monthly-mean method sees none
+    assert np.isnan(dd["pdd_year"].values[:11]).all() and np.isfinite(dd["pdd_year"].values[11:]).all()

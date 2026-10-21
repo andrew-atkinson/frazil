@@ -1,0 +1,9 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "datacube_dir": "data/train_data/monthly_datacube",
+ "out_dir": null,
+ "overwrite": false,
+ "selfcheck": false,
+ "spinup_era5": "data/train_data/data_stream-moda_stepType-avgua.nc",
+ "spread": "data/auxiliary/t2m_daily_spread.nc"
+}

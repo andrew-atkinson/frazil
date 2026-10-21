@@ -1,0 +1,9 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "check": false,
+ "check_years": "2015-2022",
+ "clim_years": "1995-2014",
+ "daily": "data/train_data/wb2_daily_t2m.nc",
+ "out": "data/auxiliary/t2m_daily_spread.nc",
+ "selfcheck": false
+}
