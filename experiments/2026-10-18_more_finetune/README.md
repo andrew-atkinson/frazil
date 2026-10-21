@@ -21,6 +21,7 @@ python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema2
 | --- | --- |
 | hindcast | `36addb25aa8a` |
 | scorecard | `e0d5acb45f04` |
+| seed-1 retrain of `pf_qm_ema`: hindcast / scorecard | `043c8edf6fa1` / `6100dc5f354c` |
 
 ## Results
 Per member against NSIDC-0051, 2019–22, M km² except r ([scorecard](../../results/scorecards/monthly_pf_qm_ema2.json)):
@@ -36,5 +37,19 @@ Per member against NSIDC-0051, 2019–22, M km² except r ([scorecard](../../res
 
 The ice-edge errors improve by about 1%; the extent biases get worse in summer (September +0.10, July +0.23, August +0.22), so the ice it adds is mostly misplaced edge, not missing ice found. Drift growth reaches +0.09, on the target, but from two years against two years with one training run that is within noise.
 
+## Is the difference noise? A seeded retrain (2026-10-20)
+`configs/experiment/pf_qm_ema_s1.yaml`: exactly `pf_qm_ema`, retrained with `seed: 1`. The difference between two runs of the same recipe is the noise floor for comparing single training runs.
+
+| 2019–22 | `monthly_pf_qm_ema` | same recipe, seed 1 | run-to-run difference | `monthly_pf_qm_ema2` minus `ema` |
+| --- | --- | --- | --- | --- |
+| September bias | +0.12 | +0.11 | 0.01 | **+0.10** |
+| July / August bias | +0.23 / +0.10 | +0.31 / +0.15 | 0.08 / 0.05 | **+0.23 / +0.21** |
+| June bias | +0.64 | +0.63 | 0.01 | +0.05 |
+| ice-edge error Sep / Jun / Jul–Sep / Dec–Mar | 1.20 / 1.36 / 1.42 / 0.80 | 1.19 / 1.35 / 1.42 / 0.81 | ≤ 0.01 | ≤ 0.02 |
+| drift growth | +0.12 | +0.09 | 0.03 | −0.03 |
+| E. Siberian September | +0.19 | +0.19 | 0.01 | +0.01 |
+
+The retrain lands close to the original: about 0.01 on September bias and every ice-edge error, 0.05–0.08 on July and August, 0.03 on drift growth. The `ema2` shift is 3–10 times larger than that on the summer biases, so **it is real, caused by the extra training**, not chance. Drift growth differences of 0.03 are within noise.
+
 ## Conclusion
-The lever is exhausted: a second 20k steps leaves the ice edge where it was and makes the summer icier, likely overfitting the 238 training samples (about 340 epochs in total since `monthly_pf_qm`). `monthly_pf_qm_ema` stays the v0.4.0 candidate (it meets the September target, this one doesn't). Next: new information for the model rather than more training on the same data, the summer-gap inputs (thaw-day degree-days, ISS-007; ocean memory).
+The lever is exhausted: a second 20k steps leaves the ice edge where it was and makes the summer systematically icier (beyond run-to-run noise): slower July–August melt every year from the first summer, mostly on the Atlantic and Siberian side. That is overfitting in a specific form: fitting the 1995–2014 training years more tightly (about 340 epochs since `monthly_pf_qm`) makes the model's summer melt more like those icier years, which is too little for 2019–22. `monthly_pf_qm_ema` stays the v0.4.0 candidate (it meets the September target, this one doesn't). Next: new information for the model rather than more training on the same data, the summer-gap inputs (thaw-day degree-days, ISS-007; ocean memory).
