@@ -276,6 +276,8 @@ python train.py +experiment=pushforward
 ```
 Starts from `monthly.ckpt`, writes to `data/models/monthly_pf/`. Every fine-tune is a recipe in `configs/experiment/` applied on top of the base config (`pushforward`, `sicqm`, `pf_qm_sst`, `pf_qm_rad`); run one with `python train.py +experiment=<name>`. Full guide, knobs, and cost in **[docs/PUSHFORWARD.md](PUSHFORWARD.md)**.
 
+**Pushforward settings** (`surrogate.*`): `pushforward_prob` (share of training steps taken from a generated state), `pushforward_substeps` (sampler steps for the generation), `pushforward_warmup` (plain steps first), and `pushforward_steps` (default 1): with K > 1, each pushforward sample chains 1 to K of the model's own generated months (uniformly) before the trained step, so it learns to correct drift compounded over several months. Needs `data.n_rollout_steps` ≥ K + 1. On the laptop K = 3 makes a training step about 1.6× slower. Recipe: `pf_qm_ema_ms`.
+
 > Training smoke tests, the optimizer A/B and the skill-vs-step sweep are archived in [archive/](../archive/README.md).
 
 # 4 · Evaluate & forecast (validation window, has truth)

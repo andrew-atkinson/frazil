@@ -1,0 +1,27 @@
+# @package _global_
+# Multi-step pushforward: exactly pf_qm_ema_s1 (seeded from monthly_pf_qm, 20k steps,
+# EMA 0.999, seed 1), but each pushforward sample chains k ~ uniform{1, 2, 3} of the
+# model's own generated months before the trained step (was always 1), so it learns
+# to correct drift compounded over a few months.
+#
+# Why: radiation, degree-days and an ocean-memory test all came out null, while the
+# September gap grows over a free-run (+0.12 in 2019-22, +0.34 in 2023-25): the gap
+# is accumulating drift, not a missing input. A/B partner: monthly_pf_qm_ema_s1.
+#
+# Each sample now needs 5 consecutive months (n_rollout_steps 4: 236 samples, was 238),
+# and generating up to 3 months makes a step ~1.6x slower (~8 h).
+# After:  the ERA5 hindcast, then  python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema_ms
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_ms
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema_ms
+seed: 1
+
+surrogate:
+  pushforward_steps: 3
+
+data:
+  n_rollout_steps: 4

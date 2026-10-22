@@ -52,6 +52,7 @@ class GenSIMTrainModule(pl.LightningModule):
             pushforward_prob: float = 0.5,
             pushforward_substeps: int = 8,
             pushforward_warmup: int = 0,
+            pushforward_steps: int = 1,
     ):
         super().__init__()
 
@@ -100,7 +101,12 @@ class GenSIMTrainModule(pl.LightningModule):
         # correction without backpropagating through the sampler. Needs the data
         # to provide >=3 frames (n_rollout_steps>=2). The sampler is stateless
         # (holds no parameters), so it adds nothing to the checkpoint.
+        # Multi-step: with pushforward_steps = K > 1, each pushforward sample
+        # chains k ~ uniform{1..K} generated states before the trained step, so the
+        # model learns to correct drift compounded over several months. Needs
+        # n_rollout_steps >= K + 1. K = 1 is the original single-step behaviour.
         self.pushforward = pushforward
+        self.pushforward_steps = pushforward_steps
         self.pushforward_prob = pushforward_prob
         self.pushforward_warmup = pushforward_warmup
         self.pf_sampler = (
@@ -277,24 +283,31 @@ class GenSIMTrainModule(pl.LightningModule):
 
     def _select_batch(self, batch, resolution, labels):
         """One-step batch for estimate_loss. With pushforward active, replace the
-        input frame by the model's own generated state so it learns to correct
-        its drift; otherwise the plain frame-0 transition."""
+        input frame by the model's own generated state (k generated steps deep) so
+        it learns to correct its drift; otherwise the plain frame-0 transition.
+        Returns (pair, k), k = 0 for a plain step."""
         n_frames = batch["states"].size(1)
+        max_k = min(getattr(self, "pushforward_steps", 1), n_frames - 2)
         use_pf = (
-            self.pushforward and self.pf_sampler is not None and n_frames >= 3
+            self.pushforward and self.pf_sampler is not None and max_k >= 1
             and self.global_step >= self.pushforward_warmup
             and float(torch.rand(1)) < self.pushforward_prob
         )
         if not use_pf:
-            return self._pair_batch(batch, 0), False
-        # Generate frame-1' from true frame-0, then train frame-1' -> true frame-2.
-        gen = self._generate_next(
-            batch["states"][:, 0:1], batch["forcings"][:, 0:2],
-            batch["mesh"], batch["mask"], self._dd_frame(batch, 0),
-            resolution, labels,
-        )
-        states = torch.stack([gen, batch["states"][:, 2]], dim=1)  # [1', 2]
-        return self._pair_batch(batch, 1, states=states), True
+            return self._pair_batch(batch, 0), 0
+        # Only draw a depth when there is a choice, so K = 1 uses the RNG exactly as before.
+        k = int(torch.randint(1, max_k + 1, (1,))) if max_k > 1 else 1
+        # Chain frame-0 -> 1' -> ... -> k' from the model's own states, then train k' -> true k+1.
+        state = batch["states"][:, 0:1]
+        for i in range(k):
+            gen = self._generate_next(
+                state, batch["forcings"][:, i:i + 2],
+                batch["mesh"], batch["mask"], self._dd_frame(batch, i),
+                resolution, labels,
+            )
+            state = gen[:, None]
+        states = torch.stack([gen, batch["states"][:, k + 1]], dim=1)  # [k', k+1]
+        return self._pair_batch(batch, k, states=states), k
 
     def training_step(
             self,
@@ -327,7 +340,7 @@ class GenSIMTrainModule(pl.LightningModule):
         pair, used_pf = self._select_batch(batch, resolution, labels)
         outputs = self.estimate_loss(pair, resolution, labels, prefix="train")
         if self.pushforward:
-            self.log("train/pushforward", float(used_pf), prog_bar=False)
+            self.log("train/pushforward", float(used_pf), prog_bar=False)  # generated depth k (0 = plain step)
 
         # Backward pass
         self.manual_backward(outputs["loss"])
