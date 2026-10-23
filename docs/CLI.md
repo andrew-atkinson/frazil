@@ -19,7 +19,7 @@ scripts/download/era5.py  ───┼─▶ preprocess_monthly.py ─▶ data/t
 scripts/download/cmip.py ────┴─▶ preprocess_cmip.py ────▶ data/train_data/cmip_datacube/       │
                           (regrid + BIAS-CORRECT)  (future forcing, 2015-2100)          │
                                                                                         ▼
-   eval_monthly.py · predict_monthly.py · rollout_monthly.py · scorecard.py   (skill / maps / scorecard)
+   eval_monthly.py · predict_monthly.py · rollout_monthly.py · scorecard.py · drift.py   (skill / maps / scorecard / drift)
    freerun_monthly.py                                                                   (decadal projection)
 ```
 
@@ -330,6 +330,22 @@ python scripts/evaluate/scorecard.py --model monthly_pf_qm_ema --holdout
 | `--holdout` | off | also score 2023–25 and 2019–25 |
 | `--obs` | `data/obs/nsidc0051_grid` | observations on the model grid |
 | `--out` | `results/scorecards/<model>.json` | scorecard file |
+
+### `scripts/evaluate/drift.py` — drift with the weather averaged out
+How a model's error grows as it runs on its own predictions (ISS-025). Free-runs from the model's own training-target state each December 2008–2014, each to December 2018 under real ERA5 weather, scored month by month against that target, which saw the same weather, so year-to-year weather cancels. Reports the **drift rate** (trend of the annual-mean extent error over lead years, mean over starts, M km² per year, with its standard error), the same for September, and the mean error by lead year; logs to the ledger, where `scorecard.py` picks it up. The runs use `freerun_monthly.py` with 2 members, the fast sampler and no snapshots (only CSVs in `plots/freerun/drift/`): ~590 model months, about 2 h per model, resumable. The starts are training years; every model shares them, so comparisons are fair.
+
+```bash
+python scripts/evaluate/drift.py --model monthly_pf_qm_ema --run   # run what's missing, then score
+python scripts/evaluate/drift.py --model monthly_pf_qm_ema         # score existing runs
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--model` | — | folder name in `data/models` (required) |
+| `--starts` | `2008-2014` | December start years |
+| `--n-ens` | `2` | members per run |
+| `--run` | off | run the missing free-runs first |
+| `--datacube` | the model's training datacube | target and forcing |
+| `--out-dir` | `plots/freerun/drift` | the runs' CSVs |
 
 ### `scripts/evaluate/rollout_monthly.py` — multi-start skill vs lead
 Free-runs from several start months (feeding the model its **own** output back with real forcings), capped at `--max-lead`, and pools squared error across starts by lead. Reports skill vs **persistence** *and* vs **climatology** (average-that-month) — the honest long-lead bar.

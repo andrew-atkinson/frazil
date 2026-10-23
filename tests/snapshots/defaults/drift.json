@@ -1,0 +1,12 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "datacube": null,
+ "model": null,
+ "n_ens": 2,
+ "no_log": false,
+ "note": "",
+ "out_dir": "plots/freerun/drift",
+ "run": false,
+ "selfcheck": false,
+ "starts": "2008-2014"
+}

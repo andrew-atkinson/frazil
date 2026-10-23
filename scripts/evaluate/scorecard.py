@@ -12,7 +12,8 @@ members saved) per member against NSIDC-0051 on the model grid:
   September bias by sector: East Siberian, Beaufort, Chukchi, Laptev
 Development years 2019-22 always; with --holdout also 2023-25 and 2019-25 (holdout
 years are for release candidates only). Adds, from the results ledger, the model's
-latest one-month skill (eval_monthly) and CMIP stability (freerun --forcing cmip).
+latest one-month skill (eval_monthly), CMIP stability (freerun --forcing cmip) and drift
+(drift.py; the hindcast's drift_growth is dominated by weather, ISS-025).
 Writes results/scorecards/<model>.json and logs a ledger entry.
 
 Needs:  freerun_monthly.py --ckpt data/models/<model>/last.ckpt --forcing era5 --start 2018-12
@@ -34,7 +35,7 @@ import xarray as xr
 import frazil.ledger as RL
 from frazil import paths
 
-VERSION = 2   # 2: adds June ice-edge error (2026-10-15)
+VERSION = 3   # 2: adds June ice-edge error (2026-10-15); 3: adds drift from drift.py (2026-10-22)
 THR = 0.15
 SECTORS = {"Barents/Kara": (20, 90), "Laptev": (90, 140), "East Siberian": (140, 180), "Chukchi": (180, 205),
            "Beaufort": (205, 240), "Canadian/Baffin/Hudson": (240, 300), "Greenland": (300, 380)}
@@ -146,6 +147,7 @@ def main(argv=None):
     records = [json.loads(l) for l in open(RL.LEDGER)] if os.path.exists(RL.LEDGER) else []
     ev = latest(records, "eval_monthly", args.model, lambda r: r["params"].get("n_ens", 1) >= 8)
     cm = latest(records, "freerun_monthly", args.model, lambda r: r["params"].get("forcing") == "cmip")
+    dr = latest(records, "drift", args.model)
     ckpt = os.path.join(paths.MODELS, args.model, "last.ckpt")
     sha = hashlib.sha256(open(ckpt, "rb").read()).hexdigest() if os.path.exists(ckpt) else None
     card = {"scorecard_version": VERSION, "model": args.model, "checkpoint_sha256": sha, "hindcast_dir": snap,
@@ -153,6 +155,8 @@ def main(argv=None):
             "one_month_skill": None if not ev else {"run_id": ev["run_id"], "datacube": ev["params"].get("datacube"),
                                                      "n_ens": ev["params"].get("n_ens"),
                                                      "skill_vs_persistence": {k: round(x, 3) for k, x in ev["metrics"]["skill_vs_persistence"].items()}},
+            "drift": None if not dr else {"run_id": dr["run_id"], **{k: dr["metrics"].get(k) for k in (
+                "drift_rate", "drift_rate_se", "sep_drift_rate", "sep_drift_rate_se", "starts", "starts_span")}},
             "cmip_stability": None if not cm else {"run_id": cm["run_id"], "years_completed": cm["metrics"].get("years_completed"),
                                                    "nonfinite_total": cm["metrics"].get("nonfinite_total")}}
     out = args.out or os.path.join(paths.SCORECARDS, f"{args.model}.json")
@@ -164,6 +168,7 @@ def main(argv=None):
     print(f"\nScorecard v{VERSION}: {args.model}  (per member vs NSIDC-0051, M km^2 unless noted)\n{table.to_string()}")
     print(f"\none-month skill: {'none in the ledger (eval_monthly --n-ens 8)' if not ev else card['one_month_skill']['skill_vs_persistence']}")
     print(f"CMIP stability:  {'no CMIP free-run in the ledger' if not cm else card['cmip_stability']}")
+    print(f"drift:           {'none in the ledger (drift.py --run)' if not dr else card['drift']}")
     print(f"[json] {out}")
     if not args.no_log:
         RL.log_result("scorecard", {**vars(args), "hindcast": snap}, card, note=args.note)

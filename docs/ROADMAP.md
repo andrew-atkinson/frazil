@@ -13,14 +13,15 @@ Before 1.0 the order of milestones can change. Change this file in the same bran
 
 ## The scorecard
 
-A fixed protocol, so numbers compare across versions. The tool is `scripts/evaluate/scorecard.py` (scorecard version 2: version 1 added 2026-10-15, version 2 the same day adds June ice-edge error; both models re-scored), writing `results/scorecards/<model>.json` and a ledger entry. It reproduces the hand-run v0.2.0 baseline below exactly. Not yet automated: the multi-month rollout skill and cost.
+A fixed protocol, so numbers compare across versions. The tool is `scripts/evaluate/scorecard.py` (scorecard version 3: version 1 added 2026-10-15, version 2 the same day adds June ice-edge error, version 3 on 2026-10-22 adds drift from `drift.py`), writing `results/scorecards/<model>.json` and a ledger entry. It reproduces the hand-run v0.2.0 baseline below exactly. Not yet automated: the multi-month rollout skill and cost.
 
 **Noise between training runs** (two runs of the same recipe, 2026-10-20): about 0.01 M km² on September bias and every ice-edge error, 0.05–0.08 on July and August bias, 0.03 on drift growth. A difference smaller than that between two single training runs isn't evidence either way; compare several seeds for a decision that close.
 
 1. **Forecast skill, validation years 2015–2018:** one-month skill against persistence and climatology for each of the six variables (`eval_monthly.py`, 8 members); multi-month skill against climatology at leads of 1, 3, 6 and 12 months (`rollout_monthly.py`, fixed start months).
 2. **Out-of-sample hindcast:** a free-run from the December 2018 state under real ERA5 weather to 2025, 8 members saved, scored per member against NSIDC-0051: September, June, July and August extent bias; ice-edge error (IIEE) for September, June, July–September and December–March; the year-to-year correlation of September extent; drift growth (September bias in the last two development years minus the first two, 2021–22 minus 2019–20; with the holdout, 2023–25 minus 2019–21); September bias in the East Siberian, Beaufort, Chukchi and Laptev seas. Reported for the development years (2019–22) and, for release candidates, the holdout (2023–25).
-3. **Stability:** the 2015–2100 CMIP free-run finishes with no non-finite values.
-4. **Cost:** seconds per step at 1 and 8 members.
+3. **Drift** (`drift.py`, from scorecard version 3): free-runs from the model's own training-target state each December 2008–2014 to December 2018 under real ERA5 weather, scored against that target month by month so the weather cancels; the drift rate is the trend of the annual-mean extent error over lead years, averaged over starts. The hindcast's drift growth above is dominated by weather and can't separate models (ISS-025).
+4. **Stability:** the 2015–2100 CMIP free-run finishes with no non-finite values.
+5. **Cost:** seconds per step at 1 and 8 members.
 
 If the protocol changes, re-score the previous release's model with the new protocol so the comparison stays like-for-like, and give the scorecard a new version number.
 

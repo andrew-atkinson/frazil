@@ -1,5 +1,5 @@
 {
- "scorecard_version": 2,
+ "scorecard_version": 3,
  "model": "monthly_pf_qm_ema",
  "checkpoint_sha256": "2a6360573bc2e2708da20c436b9b2c3041fb8b79b09e539f6836d0718237fd7a",
  "hindcast_dir": "plots/freerun/snapshots/monthly_pf_qm_ema_era5_2018",
@@ -77,6 +77,15 @@
    "siv": 0.553,
    "snt": 0.614
   }
+ },
+ "drift": {
+  "run_id": "324a877dedf7",
+  "drift_rate": -0.0069,
+  "drift_rate_se": 0.0027,
+  "sep_drift_rate": -0.0201,
+  "sep_drift_rate_se": 0.007,
+  "starts": 7,
+  "starts_span": "2008-2014"
  },
  "cmip_stability": {
   "run_id": "431bbcc70cf7",

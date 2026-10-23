@@ -5,6 +5,8 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ## [Unreleased]
 
 ### Added
+- [drift_protocol](experiments/2026-10-22_drift_protocol/) results: `monthly_pf_qm`, `_ema` and `_ema_s1` don't drift against their training target over 2009–18 (−0.005 to −0.009 M km² per year, run-to-run difference 0.002); scorecards re-scored at version 3.
+- `scripts/evaluate/drift.py` (ISS-025): drift with the weather averaged out (free-runs from several December starts 2008–14 to 2018, scored against the training target), logged to the ledger; scorecard version 3 includes it.
 - `monthly_pf_qm_ema_ms` (multi-step pushforward, K = 3): about 0.05 M km² icier throughout, ice edge unchanged; not adopted. ISS-025: the 4-year drift-growth measure is dominated by weather and can't separate models.
 - Multi-step pushforward: `surrogate.pushforward_steps` (default 1, the original behaviour) chains up to K of the model's own generated months before the trained step; tested in `tests/test_pushforward.py`. Recipe `pf_qm_ema_ms` (K = 3).
 - [ocean_memory](experiments/2026-10-21_ocean_memory/) information test (no training): an ocean-memory input adds ~1% predictability, within noise and none on the Pacific shelf, so it isn't built. The summer gap is free-run drift, not a missing input.

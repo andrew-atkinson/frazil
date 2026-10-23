@@ -1,5 +1,5 @@
 {
- "scorecard_version": 2,
+ "scorecard_version": 3,
  "model": "monthly_pf_qm_ema_s1",
  "checkpoint_sha256": "a8fdf0b87ad4b2838d483f6224acc65cc941d0f8bf97f706669ca5d16e9333d8",
  "hindcast_dir": "plots/freerun/snapshots/monthly_pf_qm_ema_s1_era5_2018",
@@ -26,5 +26,14 @@
   }
  },
  "one_month_skill": null,
+ "drift": {
+  "run_id": "b95831629980",
+  "drift_rate": -0.0051,
+  "drift_rate_se": 0.0024,
+  "sep_drift_rate": -0.0111,
+  "sep_drift_rate_se": 0.0068,
+  "starts": 7,
+  "starts_span": "2008-2014"
+ },
  "cmip_stability": null
 }
