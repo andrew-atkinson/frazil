@@ -82,7 +82,7 @@ python scripts/download/cmip.py                          # MPI-ESM1-2-LR ssp245,
 > **Caveat:** CMIP is a *scenario*, not a forecast, and its atmosphere is biased vs ERA5. The bias is removed in the next step, not here.
 
 ### `scripts/download/nsidc.py` — observed sea-ice extent (validation)
-Fetches NSIDC Sea Ice Index monthly extent CSVs (NOAA@NSIDC G02135 v4.0, 1979– present) — the observational baseline for validating GenSIM past the 2018 neXtSIM window. Extent = ocean area with SIC ≥ 15%, in 10⁶ km². Open access, stdlib only.
+Fetches NSIDC Sea Ice Index monthly extent CSVs (NOAA@NSIDC G02135 v4.0, 1979– present) — the observational baseline for validating the model past the 2018 neXtSIM window. Extent = ocean area with SIC ≥ 15%, in 10⁶ km². Open access, stdlib only.
 
 ```bash
 python scripts/download/nsidc.py                 # September, North -> data/obs/nsidc/
@@ -149,6 +149,21 @@ python scripts/data/add_forcing_channels.py --era5-dir data/train_data/era5_extr
 ```
 
 A model with more forcings: add them to `data.forcing_variables` (appended after `tus huss uas vas`), set `surrogate.network.n_input` to `24 + 2 × (number added)`, insert each new variable's mean/std into `surrogate.encoder` after the 4th and after the 8th forcing entry, and build the zarr with `build_zarr_monthly.py --extra-forcings <vars>`. `init_from` a 4-forcing checkpoint zero-initialises the new input weights (`gensim.utils.expand_forcing_channels`), so step 0 reproduces the seed model exactly. Inference scripts read each run's forcing list from `data/models/<run>/.hydra/config.yaml`.
+
+### `scripts/data/correct_sic_targets_qm.py` — quantile-mapped `sic` targets
+Maps the neXtSIM `sic` targets onto NSIDC-0051, per grid cell and calendar month, so the model learns an observation-consistent ice distribution. Only `sic` changes. With one map for all of 1995–2018 (`--window 0`, how `monthly_datacube_sicqm` was built) the correction is too strong early and too weak late, flattening the targets' September trend by about a fifth (ISS-026); `--window N` fits each year's map on the N years centred on it, so the correction follows the observed trend. Check a result with `experiments/2026-10-23_obs_gap_sources/check_targets.py`.
+
+```bash
+python scripts/data/correct_sic_targets_qm.py --window 9 --out-dir data/train_data/monthly_datacube_sicqmw9
+python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqmw9 --suffix _sicqmw9
+```
+| Flag | Default | Meaning |
+|---|---|---|
+| `--datacube` | `data/train_data/monthly_datacube` | neXtSIM targets to correct |
+| `--obs` | `data/obs/nsidc0051_grid` | observations on the model grid |
+| `--baseline` | `1995-2018` | years the maps are fitted on |
+| `--window` | `0` | years per map, centred on each year (0 = one map for the whole baseline) |
+| `--out-dir` | `data/train_data/monthly_datacube_sicqm` | corrected datacube |
 
 ### `scripts/data/degree_day_spread.py` — day-to-day temperature spread (for degree-days)
 The typical day-to-day spread (standard deviation) of daily 2 m temperature, per grid cell and calendar month, from ERA5 6-hourly data at 1.5° via WeatherBench2 (public Google Cloud, no account; cached as `data/train_data/wb2_daily_t2m.nc`, ~0.2 GB; the first run streams ~3 GB). Written to `data/auxiliary/t2m_daily_spread.nc` for `spread_degree_days.py`. `--check` instead reports, per calendar month, how well the monthly mean plus this spread reproduces degree-days from the real daily temperatures in years outside the climatology.
@@ -304,7 +319,7 @@ python scripts/evaluate/eval_monthly.py --n-ens 8
 **Resumable.** Progress is saved after every month pair (`eval_monthly_progress_<hash>.json` in the checkpoint's folder); re-run the same command to continue. Each pair has its own seed, so a resumed run gives exactly the uninterrupted result. To start over, delete that file.
 
 ### `scripts/evaluate/predict_monthly.py` — one forecast, as maps
-Predicts one target month and plots, per variable, **truth | GenSIM | persistence** maps. The visual "does the forecast look like reality" check.
+Predicts one target month and plots, per variable, **truth | Frazil | persistence** maps. The visual "does the forecast look like reality" check.
 
 ```bash
 python scripts/evaluate/predict_monthly.py --target-year 2018 --target-month 3
@@ -541,7 +556,7 @@ Outputs are named `<kind>_<tag>[_<detail>].<ext>`, where the tag says which mode
 - Checkpoints load the **EMA weights** (the inference-quality copy) via the `ema_model.module.*` prefix; architecture comes from `--train-config`.
 
 ### Ensemble mean (`--n-ens`)
-GenSIM is **generative** — it samples a plausible next state with fresh noise each call. Running it `n_ens` times and **averaging** cancels per-sample noise and yields the minimum-RMSE estimate. Empirically `--n-ens 8` beats a single sample by ~10 skill points. Cost scales with `n_ens`; drop to 4 to halve it.
+The model is **generative** — it samples a plausible next state with fresh noise each call. Running it `n_ens` times and **averaging** cancels per-sample noise and yields the minimum-RMSE estimate. Empirically `--n-ens 8` beats a single sample by ~10 skill points. Cost scales with `n_ens`; drop to 4 to halve it.
 
 ### The `--fast` sampler
 Switches the flow-matching sampler from second-order (2 model calls/substep) × 20 substeps to **first-order × 12** — ~3× fewer network evals. Fine for skill curves and diagnostics; keep it **off** when rendering art frames, where sampling quality matters.

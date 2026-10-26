@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Predict one month with a trained monthly GenSIM checkpoint and plot the maps.
+Predict one month with a trained Frazil checkpoint and plot the maps.
 
 Predicts state[target] from the true previous month + forcings, then plots, per
-state variable, a row of [truth, GenSIM, persistence] maps (persistence = the
+state variable, a row of [truth, Frazil, persistence] maps (persistence = the
 previous month, the naive baseline). Reuses eval_monthly.load_model.
 
 Run:  python scripts/evaluate/predict_monthly.py --target-year 2018 --target-month 3
@@ -90,7 +90,7 @@ def main(argv=None):
     truth = arr(ti, E.STATES)
     persist = arr(prev, E.STATES)
 
-    # Plot: rows = variables, cols = truth | GenSIM | persistence (land -> NaN).
+    # Plot: rows = variables, cols = truth | Frazil | persistence (land -> NaN).
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -100,7 +100,7 @@ def main(argv=None):
         ax.imshow(img, origin="lower", cmap=CMAP[v], vmin=vmin, vmax=vmax)
         ax.set_xticks([]); ax.set_yticks([])
 
-    cols = ["truth", "GenSIM", "persistence"]
+    cols = ["truth", "Frazil", "persistence"]
     fig, axes = plt.subplots(len(E.STATES), 3, figsize=(9, 2.6 * len(E.STATES)))
     for r, v in enumerate(E.STATES):
         t = truth[r][ocean]
@@ -117,7 +117,7 @@ def main(argv=None):
     for c, name in enumerate(cols):
         axes[0, c].set_title(name + (f"\n{axes[0, c].get_title()}"
                                      if axes[0, c].get_title() else ""), fontsize=10)
-    fig.suptitle(f"GenSIM monthly forecast: {str(times[ti])[:7]} "
+    fig.suptitle(f"Frazil monthly forecast: {str(times[ti])[:7]} "
                  f"(from {str(times[prev])[:7]})", fontsize=12)
     fig.tight_layout(rect=[0, 0, 1, 0.98])
     fig.savefig(args.out_png, dpi=130)

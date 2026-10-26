@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Estimate normalization statistics for the monthly GenSIM datacube and wire them
+Estimate normalization statistics for the monthly datacube and wire them
 into monthly copies of the Hydra configs.
 
 Background (verified against the code)

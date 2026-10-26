@@ -127,7 +127,7 @@ def main(argv=None):
             tag = f"  Sep extent {ext/1e6:.2f} M km²"
         print(f"  {yr}: {len(months)} months -> {out}{tag}", flush=True)
 
-    print(f"\nDone -> {args.out_dir}/  (obs sic on the GenSIM grid)")
+    print(f"\nDone -> {args.out_dir}/  (obs sic on the model grid)")
     print("validate: python scripts/evaluate/ice_area.py data/train_data/monthly_datacube "
           f"{args.out_dir} --month 9 --nsidc data/obs/nsidc")
 

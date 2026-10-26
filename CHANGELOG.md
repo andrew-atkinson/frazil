@@ -4,7 +4,16 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-25
+
+Close the summer gap, with the misses stated. The recommended model is `monthly_pf_qm_ema_qmw` (checkpoint SHA-256 `d2650b2c…9ffd4`, see [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)): on the 2019–22 hindcast, September bias +0.37 → +0.08 M km² and July–September ice-edge error 1.83 → 1.38 against the v0.2.0 model; one-month skill, CMIP stability and no drift all hold. **Targets met:** June and July–September ice-edge error. **Not met:** September bias on the 2023–25 holdout (+0.34, mostly a Beaufort Sea excess from 2023, ISS-028), the East Siberian and Beaufort sector targets, and drift growth (a weather-dominated measure; the drift protocol shows no drift, ISS-025). They carry forward to the roadmap's *Next* section. v0.3.0 wasn't released on its own: its scorecard ships here; its data audit (ISS-017), ISS-001 and ISS-010 remain. The roadmap's milestones were renumbered on 2026-10-09 (summer gap moved up to v0.4.0).
+
 ### Added
+- Release-candidate holdout (2023–25) for `monthly_pf_qm_ema_qmw`: September bias +0.34 as before, August improved (+0.53 → +0.38); the 2023–25 September excess is mostly a Beaufort Sea shift from 2023 (ISS-028).
+- `monthly_pf_qm_ema_qmw` passes the one-month skill and CMIP stability guardrails (projection 0.1–0.25 M km² lower than `monthly_pf_qm_ema` after 2035): the v0.4.0 release candidate.
+- `monthly_pf_qm_ema_qmw` trained on the trend-following QM targets: better than its same-seed partner on every September and ice-edge measure (2019–22 Sept bias +0.08, Sept ice-edge error 1.13); no drift.
+- `correct_sic_targets_qm.py --window N`: trend-following QM targets (ISS-026). With 9-year windows the target − NSIDC September trend drops from +0.21 to +0.03 ± 0.07 M km² per decade; targets built (`_sicqmw9`) with the recipe `pf_qm_ema_qmw`. `drift.py` now finds a model's datacube from its data suffix.
+- [obs_gap_sources](experiments/2026-10-23_obs_gap_sources/) analysis: the growing 2019–25 gap comes from the QM training targets, whose trend is a fifth too shallow (ISS-026); the model's response to summer warmth matches the observations.
 - [drift_protocol](experiments/2026-10-22_drift_protocol/) results: `monthly_pf_qm`, `_ema` and `_ema_s1` don't drift against their training target over 2009–18 (−0.005 to −0.009 M km² per year, run-to-run difference 0.002); scorecards re-scored at version 3.
 - `scripts/evaluate/drift.py` (ISS-025): drift with the weather averaged out (free-runs from several December starts 2008–14 to 2018, scored against the training target), logged to the ledger; scorecard version 3 includes it.
 - `monthly_pf_qm_ema_ms` (multi-step pushforward, K = 3): about 0.05 M km² icier throughout, ice edge unchanged; not adopted. ISS-025: the 4-year drift-growth measure is dominated by weather and can't separate models.
@@ -20,6 +29,7 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 - Radiation experiment scored (closes ISS-004): `monthly_pf_qm_rad` cuts September bias +0.37 → +0.20 and summer ice-edge error 1.83 → 1.45, but climatological radiation scores the same, so the gain comes from the EMA 0.999 fine-tune, not radiation.
 
 ### Changed
+- Outputs and descriptions name the model Frazil: the skill table's column, forecast-map column and titles, free-run titles, script descriptions. GenSIM stays where it credits the original work (its code and class names, the 512×512 grid, its constants).
 - `eval_monthly.py` is resumable: re-running the same command continues from the last finished month pair, with exactly the same result (each pair now has its own seed, so scores differ slightly from earlier runs of the same model).
 - `freerun_monthly.py` is resumable: re-running the same command continues from the last finished month, with exactly the same result (each month now has its own seed, so results differ slightly from earlier runs of the same settings).
 - Roadmap: drift growth is measured on the development years (2021–22 minus 2019–20; baseline +0.21), with the target scaled to keep its ambition (≤ +0.09, stretch ≤ +0.03).
@@ -89,6 +99,7 @@ First release as Frazil, a monthly, laptop-scale adaptation of [GenSIM](https://
 - The results report labelled every `monthly_pf_*` run as `monthly_pf`.
 - ERA5 radiation and SST were interleaved on different time stamps when merged.
 
-[Unreleased]: https://github.com/andrew-atkinson/frazil/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/andrew-atkinson/frazil/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/andrew-atkinson/frazil/compare/v0.2.0...v0.4.0
 [0.2.0]: https://github.com/andrew-atkinson/frazil/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/andrew-atkinson/frazil/releases/tag/v0.1.0

@@ -25,24 +25,26 @@ A fixed protocol, so numbers compare across versions. The tool is `scripts/evalu
 
 If the protocol changes, re-score the previous release's model with the new protocol so the comparison stays like-for-like, and give the scorecard a new version number.
 
-## Where we are: v0.2.0, the restructure (released 2026-10-07)
+## Where we are: v0.4.0 (released 2026-10-25)
 
-The code is reorganised and tested; model behaviour is unchanged from v0.1.0. Recommended model: **`monthly_pf_qm`** (pushforward on quantile-mapped targets).
+Recommended model: **`monthly_pf_qm_ema_qmw`**: pushforward on quantile-mapped targets whose correction follows the observed trend, fine-tuned with EMA 0.999 (scorecard `results/scorecards/monthly_pf_qm_ema_qmw.json`, version 3). Out-of-sample hindcast, per member, M km² unless noted:
 
-Baseline, `monthly_pf_qm`, out-of-sample hindcast 2019–25 (per member, M km² unless noted):
+| measure | 2019–22 (development) | 2023–25 (holdout) | 2019–25 |
+| --- | --- | --- | --- |
+| September extent bias | +0.08 | +0.34 | +0.19 |
+| June / July / August extent bias | +0.66 / +0.29 / +0.08 | +0.58 / +0.10 / +0.38 | +0.62 / +0.21 / +0.21 |
+| ice-edge error: September / June / July–September / December–March | 1.13 / 1.33 / 1.38 / 0.80 | 1.28 / 1.39 / 1.51 / 0.83 | 1.20 / 1.36 / 1.44 / 0.81 |
+| September year-to-year correlation | 0.95 | 0.89 (3 years) | 0.86 |
+| September bias: East Siberian / Beaufort / Chukchi / Laptev | +0.16 / +0.01 / +0.08 / −0.07 | +0.11 / +0.31 / +0.10 / −0.09 | +0.14 / +0.14 / +0.09 / −0.08 |
 
-| measure | baseline |
+| other measures | |
 | --- | --- |
-| September extent bias | +0.37 |
-| June / July / August extent bias | +0.52 / +0.28 / +0.23 |
-| ice-edge error: September / June / July–September / December–March | 1.53 / 1.57 / 1.83 / 0.93 |
-| September year-to-year correlation | 0.86 |
-| drift growth (2023–25 minus 2019–21 September bias) | +0.34 |
-| September bias: East Siberian / Beaufort / Chukchi / Laptev | +0.20 / +0.21 / +0.16 / −0.11 |
+| one-month skill against persistence, 2015–18, 8 members | concentration 58%, thickness 51%, damage 50%, drift 55% / 55%, snow 61% |
+| drift against its own target (`drift.py`, 7 starts 2008–14) | +0.003 ± 0.004 per year: none |
 | stability: 2015–2100 CMIP free-run | no non-finite values |
 | cost: 1 / 8 members, fast sampler, Apple Silicon | ~5.5 / ~46 s per step |
 
-Not yet measured for this model: the forecast-skill part of the scorecard. The base model beat persistence by 40–60% and climatology by 40–50% one month ahead (2015–18); `monthly_pf_qm`'s own numbers come with v0.3.0. These baselines span 2019–25; v0.3.0 re-reports them split into development and holdout years.
+The v0.2.0 model, `monthly_pf_qm`, is the baseline the v0.4.0 targets were set against (scorecard `results/scorecards/monthly_pf_qm.json`).
 
 ## v0.3.0 — Measurable and reproducible
 
@@ -56,6 +58,8 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 **Performance:** no model change. Guardrail: the scorecard reproduces the baseline table within sampling noise (±0.03 M km² on extent measures).
 
 **Done when:** the scorecard JSON for `monthly_pf_qm` is committed and the README's numbers cite it; every download script runs in `--dry-run`/`--list` mode from a clean clone; fast and slow tests pass.
+
+**Status (2026-10-25):** not released on its own. The scorecard tool shipped in v0.4.0 together with the drift protocol and resumable runs, and the baseline scorecard is committed. The data audit (ISS-017), telling runs apart in the report (ISS-001) and the SASIP licence check (ISS-010) remain, and go into the next release.
 
 ## v0.4.0 — Close the summer gap
 
@@ -84,6 +88,30 @@ Not yet measured for this model: the forecast-skill part of the scorecard. The b
 **Guardrails:** September correlation ≥ 0.85; December–March ice-edge error ≤ 0.95; one-month skill within 2 points of the v0.3 scorecard on every variable; the 2015–2100 CMIP run stays finite; gains survive the leak test. A model that needs inputs CMIP doesn't have yet (radiation) can still be the release model for hindcasts, but the artwork needs those inputs added first (ISS-008).
 
 **Done when:** a model meets the targets and guardrails and becomes the recommended model. If none does, v0.4.0 still ships the tooling and the write-ups, and the targets carry forward, stated as unmet.
+
+**Outcome (released 2026-10-25).** Recommended model `monthly_pf_qm_ema_qmw`. Every guardrail holds. Against the targets, development years 2019–22 and the 2023–25 holdout:
+
+| measure | target | 2019–22 | 2023–25 | |
+| --- | --- | --- | --- | --- |
+| September extent bias | ≤ +0.20 | +0.08 | +0.34 | met on development years only |
+| June ice-edge error | ≤ 1.41 | 1.33 | 1.39 | **met** |
+| July–September ice-edge error | ≤ 1.65 (stretch ≤ 1.50) | 1.38 | 1.51 | **met** (stretch on development years) |
+| East Siberian / Beaufort September bias | ≤ +0.10 each | +0.16 / +0.01 | +0.11 / +0.31 | **not met** |
+| drift growth (2021–22 minus 2019–20) | ≤ +0.09 | +0.12 | — | not met, and not a usable measure: it is dominated by weather (ISS-025); the drift protocol shows no drift (+0.003 ± 0.004 per year). Re-basing pending. |
+
+What the work found: radiation, thaw-day degree-days and an ocean-memory input add nothing (no effect, no new information, or no information the model lacks); longer training overfits the summer; multi-step pushforward makes the model icier; the model doesn't drift. What helped: the EMA fine-tune (ISS-005) and trend-following QM targets (ISS-026). The unmet targets carry forward to the section below.
+
+## Next: the persistent September and East Siberian excess
+
+**Why:** the two errors that survived every change this cycle. The East Siberian Sea is +0.1 to +0.25 too icy in every September 2019–25, in every model. September bias is near target in 2019–22 but +0.34 in 2023–25, mostly a Beaufort Sea excess of about +0.3 that appears in 2023 and stays (ISS-028). Before any more training, find out whether each comes from the model or from its training target, and what changed in 2023.
+
+**Work** (analysis first; no training until one of these points at a cause):
+1. **Model or target, by region.** Re-run the drift free-runs saving September fields, and split the model's steady offset from its target by sector (2009–18, no holdout). If the East Siberian excess is the model's own (model − target), it's a modelling problem; if it's already in the target (target − NSIDC), it's a data problem.
+2. **The targets by region and year.** The QM target minus NSIDC per sector, 1995–2018: does the windowed correction leave a regional bias in the East Siberian Sea?
+3. **When in the season the East Siberian excess appears:** month by month, June to September, model against NSIDC: late melt onset, slow summer melt, or ice that doesn't leave in September.
+4. **The Beaufort Sea 2023–25 (ISS-028):** what the observed ice and the ERA5 forcing did in those summers (temperature, the winds of the Beaufort High, radiation) against 2019–22, and how the model responds to similar anomalies in its training years.
+
+**Done when:** each of the two errors has a cause supported by these analyses, and a planned fix; or a documented reason it can't be fixed with this data. Targets carry over from v0.4.0. The holdout (2023–25) has been scored once, so for work that responds to it, it's no longer independent.
 
 ## v0.5.0 — First artwork release
 

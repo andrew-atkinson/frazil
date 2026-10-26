@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Free-running (autoregressive) rollout of the monthly GenSIM model over 2015-2018.
+Free-running (autoregressive) rollout of the Frazil model over 2015-2018.
 
 Starts from the true Jan-2015 sea-ice state, then predicts each next month by
 feeding the model its OWN previous prediction, driven by the REAL monthly

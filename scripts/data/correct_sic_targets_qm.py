@@ -12,12 +12,19 @@ at each cell, so the ice edge actually retreats (proven in qm_calibrate_poc.py).
 ONLY the sic channel changes; the other 5 states, forcings and degree-days pass
 through untouched. Cells with no valid observation are left as-is.
 
+--window N (years) makes the correction follow the observed trend: each year gets
+its own map, fitted on the N years centred on it (shifted inward at the ends of the
+baseline). With one fixed map for all of 1995-2018 (--window 0, the original), the
+correction is too strong early and too weak late, which flattens the targets'
+September trend by about a fifth (ISS-026).
+
 Then feed the corrected datacube to the training prep + a fine-tune:
     build_zarr_monthly.py --datacube-dir <out> --suffix _sicqm
     train.py +experiment=sicqm
 
 Run:  python scripts/data/correct_sic_targets_qm.py --selfcheck
       python scripts/data/correct_sic_targets_qm.py
+      python scripts/data/correct_sic_targets_qm.py --window 13 --out-dir data/train_data/monthly_datacube_sicqmw
 """
 from __future__ import annotations
 
@@ -56,6 +63,31 @@ def apply_qm(x, rq, oq, valid):
     return np.where(valid, np.clip(out, 0.0, 1.0), xf)
 
 
+def window_years(y, y0, y1, n):
+    """The n-year window centred on year y, shifted to stay inside [y0, y1]."""
+    lo = min(max(y - n // 2, y0), y1 - n + 1)
+    return lo, lo + n - 1
+
+
+def fit_maps(nx, ob, y0, y1, window):
+    """{(month, window): map}: one per month (window 0), or per month and year window."""
+    maps = {}
+    for m in range(1, 13):
+        if not window:
+            maps[(m, (y0, y1))] = fit_qm(nx[m], ob[m]); continue
+        for y in range(y0, y1 + 1):
+            lo, hi = window_years(y, y0, y1, window)
+            if (m, (lo, hi)) not in maps:
+                maps[(m, (lo, hi))] = fit_qm(nx[m][lo - y0:hi - y0 + 1], ob[m][lo - y0:hi - y0 + 1])
+    return maps
+
+
+def map_for(maps, month, year, y0, y1, window):
+    if not window:
+        return maps[(month, (y0, y1))]
+    return maps[(month, window_years(min(max(year, y0), y1), y0, y1, window))]
+
+
 def _selfcheck():
     ref = np.array([[[0.9]], [[0.8]], [[0.7]]])       # icy cell in ref
     obs = np.array([[[0.0]], [[0.1]], [[0.0]]])       # ~ice-free in obs
@@ -65,7 +97,18 @@ def _selfcheck():
     # cell with no obs -> identity
     rq2, oq2, v2 = fit_qm(np.array([[[0.5]]]), np.array([[[np.nan]]]))
     assert not v2[0, 0] and apply_qm(np.array([[0.5]]), rq2, oq2, v2)[0, 0] == 0.5
-    print("[selfcheck] quantile map OK")
+    # trend: the model keeps a cell icy every year while observations lose the ice
+    # halfway; a fixed map gives every year the same value, windowed maps follow the change
+    years = np.arange(2000, 2020)
+    nx = {m: np.full((20, 1, 1), 0.9, np.float32) for m in range(1, 13)}
+    ob = {m: np.where(years < 2010, 0.9, 0.0).astype(np.float32)[:, None, None] for m in range(1, 13)}
+    fixed = fit_maps(nx, ob, 2000, 2019, 0); moving = fit_maps(nx, ob, 2000, 2019, 7)
+    f_early, f_late = (apply_qm(np.array([[0.9]]), *map_for(fixed, 9, y, 2000, 2019, 0))[0, 0] for y in (2001, 2018))
+    w_early, w_late = (apply_qm(np.array([[0.9]]), *map_for(moving, 9, y, 2000, 2019, 7))[0, 0] for y in (2001, 2018))
+    assert f_early == f_late and w_early > 0.8 and w_late < 0.15, (f_early, f_late, w_early, w_late)
+    assert window_years(2000, 2000, 2019, 7) == (2000, 2006) and window_years(2010, 2000, 2019, 7) == (2007, 2013)
+    assert window_years(2019, 2000, 2019, 7) == (2013, 2019)
+    print("[selfcheck] quantile map OK; windowed maps follow a change that a fixed map can't")
 
 
 def _year(p):
@@ -98,6 +141,8 @@ def main(argv=None):
     ap.add_argument("--obs", default=paths.NSIDC0051_GRID)
     ap.add_argument("--out-dir", default=paths.DATACUBE_SICQM)
     ap.add_argument("--baseline", default="1995-2018")
+    ap.add_argument("--window", type=int, default=0,
+                    help="years per map, centred on each year (0 = one map for the whole baseline)")
     ap.add_argument("--aux", default=paths.AUX)
     ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args(argv)
@@ -107,9 +152,13 @@ def main(argv=None):
     y0, y1 = (int(s) for s in args.baseline.split("-"))
     nx = load_month_sic(args.datacube, y0, y1)
     ob = load_month_sic(args.obs, y0, y1)
-    qm = {m: fit_qm(nx[m], ob[m]) for m in range(1, 13)}   # per-month maps
-    print(f"[qm] fit per-cell September..-map on {y0}-{y1} "
-          f"({nx[9].shape[0]} yrs/month)")
+    if any(len(nx[m]) != y1 - y0 + 1 or len(ob[m]) != y1 - y0 + 1 for m in range(1, 13)):
+        raise SystemExit(f"need one field per year and month over {y0}-{y1} in both inputs")
+    if args.window and not 2 <= args.window <= y1 - y0 + 1:
+        raise SystemExit(f"--window must be between 2 and {y1 - y0 + 1} years")
+    qm = fit_maps(nx, ob, y0, y1, args.window)
+    print(f"[qm] {len(qm)} per-cell maps fitted on {y0}-{y1}"
+          + (f", each from the {args.window} years centred on its year" if args.window else " (one per month)"))
 
     aux = xr.open_dataset(args.aux)
     ocean = aux["mask"].values.astype(bool)
@@ -122,12 +171,13 @@ def main(argv=None):
         vn = [str(v) for v in da["var_names"].values]
         si = vn.index("sic")
         arr = da.values.copy()
-        months = pd.DatetimeIndex(da["time"].values).month
-        for i, mo in enumerate(months):
-            rq, oq, valid = qm[int(mo)]
+        times = pd.DatetimeIndex(da["time"].values)
+        months = times.month
+        for i, (mo, yr) in enumerate(zip(months, times.year)):
+            rq, oq, valid = map_for(qm, int(mo), int(yr), y0, y1, args.window)
             arr[i, si] = np.where(ocean, apply_qm(arr[i, si], rq, oq, valid), np.nan)
         out = da.copy(data=arr)
-        out.attrs["sic_quantile_mapped"] = f"NSIDC-0051 {y0}-{y1}"
+        out.attrs["sic_quantile_mapped"] = f"NSIDC-0051 {y0}-{y1}" + (f", {args.window}-year windows" if args.window else "")
         dst = f"{args.out_dir}/{os.path.basename(f)}"
         out.to_dataset().to_netcdf(dst, encoding={"datacube": {"zlib": True, "complevel": 4}})
         sep = np.where(months == 9)[0]

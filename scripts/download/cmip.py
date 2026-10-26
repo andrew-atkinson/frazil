@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Fetch monthly CMIP6 forcing for the monthly GenSIM model, from Google Cloud.
+Fetch monthly CMIP6 forcing for the Frazil model, from Google Cloud.
 
-Pulls the 4 near-surface fields GenSIM needs -- tas, huss, uas, vas -- for one
+Pulls the 4 near-surface fields the model needs -- tas, huss, uas, vas -- for one
 model, member and scenario, stitches historical (<=2014) + scenario (>=2015),
 subsets the Arctic (lat >= 35, margin below the 40N the preprocessing uses), and
 saves one NetCDF. CMIP gives specific humidity (huss) directly, so unlike ERA5
@@ -14,7 +14,7 @@ gcsfs (already in the environment). The pangeo catalog CSV is used to resolve
 each (model, experiment, variable) to its zarr store.
 
 Caveats (see README): CMIP is a *scenario* not a forecast; it is coarse (heavy
-regrid to the 12.5 km grid); and it is biased vs the ERA5 atmosphere GenSIM was
+regrid to the 12.5 km grid); and it is biased vs the ERA5 atmosphere the model was
 trained on, so bias-correction is likely needed before the output is meaningful.
 
 Run:  python cmip_fetch.py --dry-run                  # inspect, no download
@@ -103,7 +103,7 @@ def main(argv=None):
     ds = xr.Dataset(das)
     ds.attrs.update(model=args.model, member=args.member,
                     scenario=f"historical+{args.scenario}",
-                    note="Arctic CMIP6 monthly forcing for GenSIM (tas/huss/uas/vas)")
+                    note="Arctic CMIP6 monthly forcing for Frazil (tas/huss/uas/vas)")
     if args.dry_run:
         print("[cmip] dry run -- nothing written")
         return

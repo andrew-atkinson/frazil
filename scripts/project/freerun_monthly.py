@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Decadal free-running rollout of the monthly GenSIM model -- the PRIMARY use case.
+Decadal free-running rollout of the Frazil model -- the PRIMARY use case.
 
 Past the 2015-2018 validation window there is NO truth, so this measures
 SELF-CONSISTENCY, not skill: does the free-running model hold a stable seasonal
@@ -348,7 +348,7 @@ def main(argv=None):
     plot(rows, anchor, args, csv_path)
     if not args.no_map:
         state_map(sm, ocean, os.path.join(args.out_dir, f"freerun_{tag}_map.png"),
-                  f"GenSIM sea ice {last_date:%Y-%m}  ({args.years}yr free run, {tag})")
+                  f"Frazil sea ice {last_date:%Y-%m}  ({args.years}yr free run, {tag})")
 
 
 def state_map(sm, ocean, path, title):
@@ -385,7 +385,7 @@ def plot(rows, anchor, args, csv_path):
     col = lambda rs, k: np.array([r[k] for r in rs])
 
     fig, ax = plt.subplots(2, 2, figsize=(12, 8))
-    fig.suptitle(f"GenSIM monthly free run -- {args.years}yr, forcing={args.forcing} "
+    fig.suptitle(f"Frazil monthly free run -- {args.years}yr, forcing={args.forcing} "
                  f"(grey = truth window)", fontsize=13)
     truth_end = ayr[-1] if ayr is not None and len(ayr) else 0
 

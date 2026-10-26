@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Recompute September sea-ice extent the CORRECT way for a generative ensemble, to
-see how much of GenSIM's apparent 'drift' is an ice-edge averaging artifact.
+see how much of the model's apparent 'drift' is an ice-edge averaging artifact.
 
   extent-of-mean  = extent(mean of the members)   <- what we plotted (over-counts
                     the soft, disagreeing ice edge -> inflated summer extent)

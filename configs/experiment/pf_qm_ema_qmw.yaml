@@ -1,0 +1,22 @@
+# @package _global_
+# Trend-preserving QM targets (ISS-026): exactly pf_qm_ema_s1 (seeded from monthly_pf_qm,
+# 20k steps, EMA 0.999, seed 1), trained on targets corrected with 9-year windowed
+# quantile maps (correct_sic_targets_qm.py --window 9) instead of one map for all of
+# 1995-2018. The fixed map flattened the targets' September trend by a fifth (target -
+# NSIDC +0.21 M km^2 per decade); the windowed targets' gap trend is +0.03 +/- 0.07.
+# A/B partner: monthly_pf_qm_ema_s1 (same seed).
+#
+# Prereq:  python scripts/data/correct_sic_targets_qm.py --window 9 --out-dir data/train_data/monthly_datacube_sicqmw9
+#          python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqmw9 --suffix _sicqmw9
+# After:   the ERA5 hindcast, drift.py --run, then scorecard.py --model monthly_pf_qm_ema_qmw
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_qmw
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema_qmw
+seed: 1
+
+data:
+  suffix: _sicqmw9

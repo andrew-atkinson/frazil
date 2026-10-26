@@ -10,7 +10,7 @@ All commands run from the repo root with the `gensim` env active. Figures land i
 
 | Output | Tool | Kind |
 |---|---|---|
-| Forecast maps (truth \| GenSIM \| persistence) | `predict_monthly.py` | spatial, validation |
+| Forecast maps (truth \| Frazil \| persistence) | `predict_monthly.py` | spatial, validation |
 | Final-state map of a run | `freerun_monthly.py` (`_map.png`) | spatial |
 | Map of **any** saved month | `state_map()` (snippet below) | spatial |
 | Ice extent / area over time (+ obs) | `ice_area.py` | time series |
@@ -25,7 +25,7 @@ All commands run from the repo root with the `gensim` env active. Figures land i
 ## 1 · Spatial maps (one moment in time)
 
 ### Forecast maps — `predict_monthly.py`
-Predicts one validation month and draws, per variable, a row of **truth \| GenSIM \| persistence**. The visual "does the forecast look like reality" check (validation window only — it needs truth).
+Predicts one validation month and draws, per variable, a row of **truth \| Frazil \| persistence**. The visual "does the forecast look like reality" check (validation window only — it needs truth).
 
 ```bash
 python scripts/evaluate/predict_monthly.py --target-year 2018 --target-month 9 --n-ens 8
@@ -48,7 +48,7 @@ import xarray as xr, sys; sys.path.insert(0, "experiments")
 from freerun_monthly import state_map
 ocean = xr.open_dataset("data/auxiliary/ds_auxiliary.nc")["mask"].values.astype(bool)
 sm = xr.open_dataset("plots/freerun/snapshots/state_205009.nc")["state"].isel(time=0).values
-state_map(sm, ocean, "plots/ice_2050-09.png", "GenSIM sea ice 2050-09")
+state_map(sm, ocean, "plots/ice_2050-09.png", "Frazil sea ice 2050-09")
 ```
 
 ### Colormaps & variables

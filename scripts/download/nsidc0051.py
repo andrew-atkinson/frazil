@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Fetch gridded observed sea-ice concentration (NSIDC-0051 v2) via NASA Earthdata,
-to bias-correct GenSIM's neXtSIM `sic` training targets against observations.
+to bias-correct the model's neXtSIM `sic` training targets against observations.
 
 NSIDC-0051 = passive-microwave SIC on the 25 km NH polar-stereographic grid,
 1978-2025, daily and monthly. We pull the MONTHLY fields to match the monthly

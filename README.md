@@ -15,13 +15,13 @@
 
 | | result |
 | --- | --- |
-| **One month ahead** (validation, 2015–18) | beats persistence by 40–60% and climatology by 40–50% on all six ice variables |
-| **Up to a year ahead** | beats climatology by 20–30% on thickness and drift; snow and damage fade to climatology |
-| **Real weather, unseen years** (2019–25, `monthly_pf_qm`) | follows the year-to-year swings in September extent (correlation 0.86) but runs ~0.4 M km² too icy per member, mostly misplaced summer ice on the Pacific shelf ([experiments](experiments/README.md)) |
-| **Long free-runs** | stable for decades: no blow-up, the seasonal cycle holds |
-| **Warming scenario** (CMIP6 SSP2-4.5, `monthly_pf_qm`, per member) | September extent 5.7 (2015–24) → 3.4 (2045–54) → 2.8 (2071–80) → 1.8 M km² (2091–99). It starts ~1 M km² above observations (one climate model's weather plus drift), so read the decline, not the level |
+| **One month ahead** (validation, 2015–18, `monthly_pf_qm_ema_qmw`) | beats persistence by 50–61% on all six ice variables (concentration 58%, thickness 51%, snow 61%) |
+| **Up to a year ahead** (base model) | beats climatology by 20–30% on thickness and drift; snow and damage fade to climatology |
+| **Real weather, unseen years** (2019–25, `monthly_pf_qm_ema_qmw`, per member) | follows the year-to-year swings in September extent (correlation 0.86). September runs +0.08 M km² too icy in 2019–22 and +0.34 in 2023–25, the latter mostly a Beaufort Sea excess from 2023; the East Siberian Sea is +0.1 to +0.25 too icy every year ([scorecard](results/scorecards/monthly_pf_qm_ema_qmw.json), [experiments](experiments/README.md)) |
+| **Long free-runs** | stable for decades: no blow-up, the seasonal cycle holds, and no drift against its training target over 2009–18 |
+| **Warming scenario** (CMIP6 SSP2-4.5, `monthly_pf_qm_ema_qmw`, per member) | September extent 5.4 (2015–24) → 3.1 (2045–54) → 2.4 (2075–84) → 1.2 M km² (2095–99). It starts ~0.8 M km² above observations because the climate model's forcing runs cold, so read the decline, not the level |
 
-It is **not** a calibrated climate model. It inherits its training target's biases (neXtSIM runs too icy in September), follows a single climate-model trajectory for the future, and works only at monthly resolution. See *Limitations* below and the open problems in [docs/ISSUES.md](docs/ISSUES.md).
+It is **not** a calibrated climate model. Its training target is a sea-ice model (neXtSIM) corrected toward observations, it follows a single climate-model trajectory for the future, and it works only at monthly resolution. Two errors persist and are being investigated: the East Siberian Sea and the 2023–25 Beaufort Sea (see the [roadmap](docs/ROADMAP.md)). See *Limitations* below and the open problems in [docs/ISSUES.md](docs/ISSUES.md).
 
 ## Installation
 
@@ -89,7 +89,7 @@ python train.py ckpt_path=data/models/monthly/last.ckpt
 
 ```bash
 python scripts/evaluate/eval_monthly.py        # one-month-ahead RMSE + skill vs persistence
-python scripts/evaluate/predict_monthly.py     # plot forecast maps: truth | GenSIM | persistence
+python scripts/evaluate/predict_monthly.py     # plot forecast maps: truth | Frazil | persistence
 python scripts/evaluate/rollout_monthly.py     # free-running autoregressive rollout, error vs lead
 ```
 

@@ -51,6 +51,9 @@ def model_datacube(model):
     cfg = yaml.safe_load(open(os.path.join(paths.MODELS, model, ".hydra", "config.yaml")))
     suffix = cfg["data"].get("suffix", "")
     extra = [v for v in cfg["data"].get("forcing_variables", []) if v not in ("tus", "huss", "uas", "vas")]
+    named = os.path.join(paths.TRAIN_DATA, f"monthly_datacube{suffix}")     # e.g. _sicqm_dd, _sicqmw9
+    if suffix != "_monthly" and not extra and os.path.isdir(named):
+        return named
     cube = paths.DATACUBE_SICQM if "sicqm" in suffix else paths.DATACUBE
     return cube + ("_dd" if suffix.endswith("_dd") else "") + ("_era5x" if extra else "")
 

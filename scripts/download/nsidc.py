@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Fetch NSIDC Sea Ice Index monthly extent CSVs (NOAA@NSIDC G02135, v4.0) as an
-OBSERVATIONAL baseline for validating GenSIM past the 2018 neXtSIM window.
+OBSERVATIONAL baseline for validating the model past the 2018 neXtSIM window.
 
 Monthly extent = ocean area with sea-ice concentration >= 15%, in 10^6 km^2,
 Nov-1978 to present. One CSV per calendar month (e.g. September = month 9). Open

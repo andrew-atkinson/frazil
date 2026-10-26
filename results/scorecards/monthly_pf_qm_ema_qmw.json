@@ -1,0 +1,95 @@
+{
+ "scorecard_version": 3,
+ "model": "monthly_pf_qm_ema_qmw",
+ "checkpoint_sha256": "d2650b2cddf45bebaa0d063415cae395738ff369c5c6e3d9c94d733ff9b9ffd4",
+ "hindcast_dir": "plots/freerun/snapshots/monthly_pf_qm_ema_qmw_era5_2018",
+ "hindcast": {
+  "development_2019_22": {
+   "sep_bias": 0.082,
+   "jun_bias": 0.655,
+   "jul_bias": 0.291,
+   "aug_bias": 0.077,
+   "iiee_sep": 1.133,
+   "iiee_jun": 1.329,
+   "iiee_jas": 1.384,
+   "iiee_djfm": 0.798,
+   "sep_r": 0.949,
+   "drift_growth": 0.12,
+   "drift_growth_years": "2021-2022 minus 2019-2020",
+   "sep_bias_east_siberian": 0.161,
+   "sep_bias_beaufort": 0.012,
+   "sep_bias_chukchi": 0.083,
+   "sep_bias_laptev": -0.071,
+   "years": "2019-2022",
+   "members": 8,
+   "months_scored": 48
+  },
+  "holdout_2023_25": {
+   "sep_bias": 0.342,
+   "jun_bias": 0.577,
+   "jul_bias": 0.098,
+   "aug_bias": 0.379,
+   "iiee_sep": 1.283,
+   "iiee_jun": 1.391,
+   "iiee_jas": 1.508,
+   "iiee_djfm": 0.825,
+   "sep_r": 0.888,
+   "drift_growth": -0.131,
+   "drift_growth_years": "2025-2025 minus 2023-2023",
+   "sep_bias_east_siberian": 0.114,
+   "sep_bias_beaufort": 0.305,
+   "sep_bias_chukchi": 0.099,
+   "sep_bias_laptev": -0.085,
+   "years": "2023-2025",
+   "members": 8,
+   "months_scored": 36
+  },
+  "all_2019_25": {
+   "sep_bias": 0.194,
+   "jun_bias": 0.621,
+   "jul_bias": 0.208,
+   "aug_bias": 0.206,
+   "iiee_sep": 1.197,
+   "iiee_jun": 1.356,
+   "iiee_jas": 1.437,
+   "iiee_djfm": 0.81,
+   "sep_r": 0.861,
+   "drift_growth": 0.343,
+   "drift_growth_years": "2023-2025 minus 2019-2021",
+   "sep_bias_east_siberian": 0.141,
+   "sep_bias_beaufort": 0.138,
+   "sep_bias_chukchi": 0.09,
+   "sep_bias_laptev": -0.077,
+   "years": "2019-2025",
+   "members": 8,
+   "months_scored": 84
+  }
+ },
+ "one_month_skill": {
+  "run_id": "7ed18eccd467",
+  "datacube": "data/train_data/monthly_datacube_sicqmw9",
+  "n_ens": 8,
+  "skill_vs_persistence": {
+   "sic": 0.58,
+   "sid": 0.502,
+   "sit": 0.514,
+   "siu": 0.555,
+   "siv": 0.553,
+   "snt": 0.613
+  }
+ },
+ "drift": {
+  "run_id": "71093e5f2af0",
+  "drift_rate": 0.0034,
+  "drift_rate_se": 0.0043,
+  "sep_drift_rate": 0.0035,
+  "sep_drift_rate_se": 0.0176,
+  "starts": 7,
+  "starts_span": "2008-2014"
+ },
+ "cmip_stability": {
+  "run_id": "f12f5d95e695",
+  "years_completed": 85.0,
+  "nonfinite_total": 0
+ }
+}

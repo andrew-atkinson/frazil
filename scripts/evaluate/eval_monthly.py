@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Evaluate a trained monthly GenSIM checkpoint by prediction skill, not loss.
+Evaluate a trained Frazil checkpoint by prediction skill, not loss.
 
 Loads the EMA weights from a Lightning .ckpt into a GenSIMForecastModule and does
 one-month-ahead predictions over the validation months (2015-2018): predict
@@ -41,7 +41,7 @@ from frazil import paths
 
 def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, state_file=None, seed=42):
     """One-month-ahead RMSE over ocean per state var. Returns {var: (rmse_model,
-    rmse_persistence)}. With n_ens>1, GenSIM is a generative ensemble -- draw
+    rmse_persistence)}. With n_ens>1, the model is a generative ensemble -- draw
     n_ens members (the batch dim) and use the ensemble MEAN, which cancels
     per-sample sampling noise."""
     ocean = aux["mask"].values.astype(bool)
@@ -125,7 +125,7 @@ def main(argv=None):
     rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens, state_file=state_file)
 
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
-    print(f"  {'var':5s} {'GenSIM':>10s} {'persistence':>12s} {'skill':>8s}")
+    print(f"  {'var':5s} {'Frazil':>10s} {'persistence':>12s} {'skill':>8s}")
     beats = 0
     skill_v, rm_v, rp_v = {}, {}, {}
     for v in STATES:

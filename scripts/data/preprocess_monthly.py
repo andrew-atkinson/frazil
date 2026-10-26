@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Monthly preprocessing for a GenSIM retraining experiment.
+Monthly preprocessing for Frazil's monthly model.
 
 Takes the two raw monthly datasets you downloaded:
 

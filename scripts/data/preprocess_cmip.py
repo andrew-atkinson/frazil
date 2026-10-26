@@ -14,7 +14,7 @@ exactly the forcing/degree-day channels rollout_monthly.py reads. No states
 Reuses the regrid + rotation + degree-day helpers from preprocess_monthly, so the
 geometry is identical to the ERA5 path.
 
-Bias correction: CMIP atmospheres are biased vs the ERA5 forcing GenSIM trained
+Bias correction: CMIP atmospheres are biased vs the ERA5 forcing the model trained
 on, which pushes the model off-distribution. This script corrects each raw field
 by an additive per-calendar-month, per-cell delta so its 1995-2014 climatology
 matches ERA5's (--no-bias to skip; --bias-years to change the baseline). It's a
