@@ -128,3 +128,13 @@ def test_freerun_resumes_exactly(tmp_path, monkeypatch):
     for f in sorted(glob.glob(f"{tmp_path}/full/snapshots/*/members_*.nc")):
         g = f.replace("/full/", "/resumed/")
         np.testing.assert_array_equal(xr.open_dataset(f).sic.values, xr.open_dataset(g).sic.values)
+
+
+def test_freerun_saves_only_the_requested_months(tmp_path):
+    """--snapshot-months keeps snapshots (and members) to those calendar months, plus the final state."""
+    need(MODEL, "data/train_data/monthly_datacube")
+    run(["scripts/project/freerun_monthly.py", "--ckpt", MODEL, "--forcing", "era5", "--start", "2016-12",
+         "--years", "1", "--n-ens", "1", "--fast", "--snapshot-every", "1", "--snapshot-months", "6", "7",
+         "--save-members", "--no-log", "--no-map", "--out-dir", str(tmp_path)])
+    names = lambda pat: sorted(os.path.basename(f)[-9:-3] for f in glob.glob(f"{tmp_path}/snapshots/*/{pat}_*.nc"))
+    assert names("members") == ["201706", "201707", "201712"] and names("state") == ["201706", "201707", "201712"]

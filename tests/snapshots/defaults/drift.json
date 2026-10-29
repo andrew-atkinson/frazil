@@ -1,6 +1,7 @@
 {
  "aux": "data/auxiliary/ds_auxiliary.nc",
  "datacube": null,
+ "fields": false,
  "model": null,
  "n_ens": 2,
  "no_log": false,

@@ -4,6 +4,10 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+### Added
+- [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) results: the Pacific-shelf September excess is the model's own (+0.09–0.12 above its target, which matches NSIDC), and in the East Siberian and Beaufort seas it builds over 4–5 years as the ice thickens. Erratum on the drift protocol's "no drift" (pan-Arctic only).
+- `freerun_monthly.py --snapshot-months` (save only some calendar months) and `drift.py --fields` (the drift runs with June–October concentration saved), for the [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) analysis; a slow test for the month filter.
+
 ## [0.4.0] — 2026-10-25
 
 Close the summer gap, with the misses stated. The recommended model is `monthly_pf_qm_ema_qmw` (checkpoint SHA-256 `d2650b2c…9ffd4`, see [docs/DATA_AND_MODELS.md](docs/DATA_AND_MODELS.md)): on the 2019–22 hindcast, September bias +0.37 → +0.08 M km² and July–September ice-edge error 1.83 → 1.38 against the v0.2.0 model; one-month skill, CMIP stability and no drift all hold. **Targets met:** June and July–September ice-edge error. **Not met:** September bias on the 2023–25 holdout (+0.34, mostly a Beaufort Sea excess from 2023, ISS-028), the East Siberian and Beaufort sector targets, and drift growth (a weather-dominated measure; the drift protocol shows no drift, ISS-025). They carry forward to the roadmap's *Next* section. v0.3.0 wasn't released on its own: its scorecard ships here; its data audit (ISS-017), ISS-001 and ISS-010 remain. The roadmap's milestones were renumbered on 2026-10-09 (summer gap moved up to v0.4.0).

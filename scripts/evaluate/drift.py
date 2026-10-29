@@ -23,6 +23,9 @@ what this measures, and every model shares them, so comparisons stay fair.
 Run:  python scripts/evaluate/drift.py --selfcheck
       python scripts/evaluate/drift.py --model monthly_pf_qm_ema --run     # run what's missing, then score
       python scripts/evaluate/drift.py --model monthly_pf_qm_ema           # score existing runs
+      python scripts/evaluate/drift.py --model monthly_pf_qm_ema_qmw --run --fields
+          # the same runs, also saving every member's sic for June-October (in <out-dir>/fields/),
+          # for regional analysis; runs are exactly repeatable, so the drift numbers match
 """
 from __future__ import annotations
 
@@ -129,6 +132,8 @@ def main(argv=None):
     ap.add_argument("--starts", default="2008-2014", help="December start years, YYYY-YYYY")
     ap.add_argument("--n-ens", type=int, default=2)
     ap.add_argument("--run", action="store_true", help="run the missing free-runs first (resumable)")
+    ap.add_argument("--fields", action="store_true",
+                    help="also save every member's sic for June-October (runs go in <out-dir>/fields/)")
     ap.add_argument("--datacube", default=None, help="default: the one the model was trained on")
     ap.add_argument("--out-dir", default=paths.DRIFT_OUT)
     ap.add_argument("--aux", default=paths.AUX)
@@ -142,9 +147,10 @@ def main(argv=None):
         raise SystemExit("give --model (its folder name in data/models)")
     cube = args.datacube or model_datacube(args.model)
     ckpt = os.path.join(paths.MODELS, args.model, "last.ckpt")
+    out_dir = os.path.join(args.out_dir, "fields") if args.fields else args.out_dir
     y0, y1 = (int(s) for s in args.starts.split("-"))
     starts = range(y0, y1 + 1)
-    csv = lambda y: os.path.join(args.out_dir, f"freerun_{RL.model_tag(ckpt)}_era5_{y}.csv")
+    csv = lambda y: os.path.join(out_dir, f"freerun_{RL.model_tag(ckpt)}_era5_{y}.csv")
     complete = lambda y: os.path.exists(csv(y)) and len(pd.read_csv(csv(y))) == (END_YEAR - y) * 12 + 1
     print(f"[drift] {args.model}: starts Dec {y0}-{y1} -> Dec {END_YEAR}, target {cube}")
 
@@ -154,8 +160,9 @@ def main(argv=None):
                 print(f"  Dec {y}: done"); continue
             cmd = [sys.executable, os.path.join(RL.ROOT, "scripts", "project", "freerun_monthly.py"),
                    "--ckpt", ckpt, "--forcing", "era5", "--start", f"{y}-12", "--years", str(END_YEAR - y),
-                   "--n-ens", str(args.n_ens), "--fast", "--snapshot-every", "0", "--no-map", "--no-log",
-                   "--datacube", cube, "--out-dir", args.out_dir]
+                   "--n-ens", str(args.n_ens), "--fast", "--no-map", "--no-log", "--datacube", cube, "--out-dir", out_dir]
+            cmd += (["--snapshot-every", "1", "--snapshot-months", "6", "7", "8", "9", "10", "--save-members"]
+                    if args.fields else ["--snapshot-every", "0"])
             print(f"  Dec {y}: {END_YEAR - y} years ...", flush=True)
             subprocess.run(cmd, check=True)
     missing = [y for y in starts if not complete(y)]

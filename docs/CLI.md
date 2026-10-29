@@ -359,6 +359,7 @@ python scripts/evaluate/drift.py --model monthly_pf_qm_ema         # score exist
 | `--starts` | `2008-2014` | December start years |
 | `--n-ens` | `2` | members per run |
 | `--run` | off | run the missing free-runs first |
+| `--fields` | off | also save every member's concentration for June–October, for regional analysis (runs go in `<out-dir>/fields/`) |
 | `--datacube` | the model's training datacube | target and forcing |
 | `--out-dir` | `plots/freerun/drift` | the runs' CSVs |
 
@@ -410,6 +411,8 @@ python scripts/project/freerun_monthly.py --forcing era5 --start 2018-12 --years
 | `--climatology-forcing` | none | `era5` only: replace the named forcing channels (e.g. `sst`) with their 1995–2014 calendar-month mean — a leak test: if skill collapses without the year-specific values, the model was reading them rather than learning physics. Output tagged `_clim-<vars>` |
 
 **Outputs:** `freerun_<forcing>.csv` (diagnostics), `freerun_<forcing>.png` (4-panel diagnostics), `freerun_<forcing>_map.png` (6-variable map of the final month), and `snapshots/<model>_<forcing>/state_YYYYMM.nc` (full spatial states — what maps/animations are built from, namespaced by checkpoint+forcing so runs never overwrite each other; `era5` runs also carry the start year, e.g. `monthly_pf_era5_2018`; the run prints the exact folder). With a January start, `--snapshot-every 12` lands on winter maxima; use `--snapshot-every 1` (or `--start 2015-09`) to capture the September minimum for a shrinking-ice animation.
+
+**Saving only some months:** `--snapshot-months 6 7 8 9 10` with `--snapshot-every 1` keeps snapshots (and members) to those calendar months, plus the final state.
 
 **Resumable.** After every month the run saves the full ensemble state and its diagnostics so far to `<out-dir>/freerun_<tag>_resume.pt` (about 6 MB per member). Re-run the same command to continue; it's deleted when the run ends. Each month has its own seed, so a resumed run gives exactly the uninterrupted result. A resume file from different settings (or a retrained checkpoint) is ignored and the run starts over.
 

@@ -15,6 +15,7 @@
  "out_dir": "plots/freerun",
  "save_members": null,
  "snapshot_every": 12,
+ "snapshot_months": null,
  "start": "2015-01",
  "train_config": "configs/config_train_monthly_mac.yaml",
  "years": 15

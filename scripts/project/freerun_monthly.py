@@ -77,6 +77,9 @@ def main(argv=None):
     ap.add_argument("--snapshot-every", type=int, default=12,
                     help="save the full spatial state every N months (0=off); the "
                          "final state is always saved. These are what maps are drawn from.")
+    ap.add_argument("--snapshot-months", nargs="*", type=int, default=None, metavar="M",
+                    help="with --snapshot-every, save only these calendar months (e.g. 6 7 8 9 10); "
+                         "the final state is still saved")
     ap.add_argument("--no-map", action="store_true", help="skip the final-state map figure")
     ap.add_argument("--climatology-forcing", nargs="*", default=[],
                     help="era5 only: replace these forcing channels (e.g. sst) with their "
@@ -283,7 +286,8 @@ def main(argv=None):
               f"nan={d['n_nonfinite']}  "
               f"{d['wall_s']:.1f}s/step  ETA {eta/60:4.0f}m", end="\r", flush=True)
         last_nonfinite = d["n_nonfinite"] > 0
-        if args.snapshot_every and ((k + 1) % args.snapshot_every == 0
+        wanted_month = not args.snapshot_months or last_date.month in args.snapshot_months
+        if args.snapshot_every and (((k + 1) % args.snapshot_every == 0 and wanted_month)
                                     or k + 1 == nsteps or last_nonfinite):
             save_state(sm, last_date, os.path.join(
                 snap_dir, f"state_{last_date:%Y%m}.nc"))
