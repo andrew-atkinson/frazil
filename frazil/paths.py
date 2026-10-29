@@ -10,6 +10,7 @@ AUX = "data/auxiliary/ds_auxiliary.nc"
 # Training data: raw downloads, the per-year datacubes and the packed zarr stores.
 TRAIN_DATA = "data/train_data"
 NEXTSIM_RAW = "data/train_data/nextsim_opa_monthly"
+NEXTSIM_OCEAN_HEAT = "data/train_data/nextsim_ocean_heat"   # neXtSIM-OPA upper-ocean heat content, Pacific/Siberian shelves
 ERA5_RAW = "data/train_data/data_stream-moda_stepType-avgua.nc"
 ERA5_EXTRA_RAW = "data/train_data/era5_extra_1995_2025"
 WB2_DAILY_T2M = "data/train_data/wb2_daily_t2m.nc"   # daily 2 m temperature, 1.5 deg, from WeatherBench2

@@ -111,6 +111,8 @@ What the work found: radiation, thaw-day degree-days and an ocean-memory input a
 3. **When in the season the East Siberian excess appears:** month by month, June to September, model against NSIDC: late melt onset, slow summer melt, or ice that doesn't leave in September.
 4. **The Beaufort Sea 2023–25 (ISS-028):** what the observed ice and the ERA5 forcing did in those summers (temperature, the winds of the Beaufort High, radiation) against 2019–22, and how the model responds to similar anomalies in its training years.
 
+5. **Ocean heat Frazil can't see** ([pacific_shelf_ocean_heat](../experiments/2026-10-29_pacific_shelf_ocean_heat/)): the literature points to Pacific Water heat, stored subsurface summer heat and river heat; tested against the training simulation's own ocean.
+
 **Done when:** each of the two errors has a cause supported by these analyses, and a planned fix; or a documented reason it can't be fixed with this data. Targets carry over from v0.4.0. The holdout (2023–25) has been scored once, so for work that responds to it, it's no longer independent.
 
 ## v0.5.0 — First artwork release

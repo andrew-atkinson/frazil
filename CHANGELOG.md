@@ -5,6 +5,7 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 ## [Unreleased]
 
 ### Added
+- [pacific_shelf_ocean_heat](experiments/2026-10-29_pacific_shelf_ocean_heat/): literature review (Pacific Water heat, stored subsurface heat, river heat, ice import) matched to the regional findings; `scripts/download/nextsim_ocean_heat.py` (the training simulation's upper-ocean heat content) and the step-1 analysis. Local copies of sources in a gitignored `literature/` folder.
 - [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) results: the Pacific-shelf September excess is the model's own (+0.09–0.12 above its target, which matches NSIDC), and in the East Siberian and Beaufort seas it builds over 4–5 years as the ice thickens. Erratum on the drift protocol's "no drift" (pan-Arctic only).
 - `freerun_monthly.py --snapshot-months` (save only some calendar months) and `drift.py --fields` (the drift runs with June–October concentration saved), for the [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) analysis; a slow test for the month filter.
 

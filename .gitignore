@@ -204,3 +204,6 @@ results/patches/
 # Personal tooling (code search / assistant config), not part of the project
 .mcp.json
 .ignore
+
+# Downloaded papers and web pages for the lab notebook (copyrighted; local reference only)
+literature/
