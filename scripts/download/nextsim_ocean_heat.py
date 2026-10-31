@@ -29,30 +29,16 @@ import numpy as np
 import xarray as xr
 
 from frazil import paths
+from frazil.preprocess import LAYERS, OCEAN_RHO_CP, T_FREEZE, heat_content, layer_weights
 
 SERVER = "https://ige-meom-opendap.univ-grenoble-alpes.fr/thredds/dodsC"
 RUN = "meomopendap/extract/SASIP/model-outputs/OPA-neXtSIM_CREG025/OPA-neXtSIM_CREG025-ILBOXE140-MEAN/1m"
 PREFIX = "OPA-neXtSIM_CREG025-ILBOXE140"
-RHO, CP, T_FREEZE = 1025.0, 3985.0, -1.8
-LAYERS = {"ohc_0_20": (0.0, 20.0), "ohc_20_100": (20.0, 100.0)}
 LAT_MIN, LON_RANGE = 64.0, (90.0, 250.0)
 
 
 def url(year, month):
     return f"{SERVER}/{RUN}/{year}/{PREFIX}_y{year}m{month:02d}.1m_gridT.nc"
-
-
-def layer_weights(bounds, top, bottom):
-    """Metres of each model level inside [top, bottom]."""
-    return np.clip(np.minimum(bounds[:, 1], bottom) - np.maximum(bounds[:, 0], top), 0, None)
-
-
-def heat_content(temp, bounds):
-    """temp (levels, y, x) in C, missing/0.0 = no water -> {layer: (y, x) MJ m^-2}."""
-    t = np.where(np.isfinite(temp) & (temp != 0.0), temp, np.nan)
-    excess = np.nan_to_num(np.clip(t - T_FREEZE, 0, None))
-    return {name: (RHO * CP * np.tensordot(layer_weights(bounds, a, b), excess, axes=(0, 0)) / 1e6).astype(np.float32)
-            for name, (a, b) in LAYERS.items()}
 
 
 def box_and_levels(ds):
@@ -69,10 +55,11 @@ def _selfcheck():
     temp[3, 0, 1] = 0.0                                     # below the sea floor in column 2
     temp[2:, 0, 1] = np.nan
     h = heat_content(temp, bounds)
-    one_metre = RHO * CP / 1e6                              # MJ m^-2 per metre per kelvin
+    one_metre = OCEAN_RHO_CP / 1e6                              # MJ m^-2 per metre per kelvin
     assert np.allclose(h["ohc_0_20"][0], 20 * one_metre)
     assert np.isclose(h["ohc_20_100"][0, 0], 80 * one_metre) and h["ohc_20_100"][0, 1] == 0
     assert np.allclose(layer_weights(bounds, 20, 100), [0, 0, 40, 40])
+    assert heat_content(temp, bounds, zero_is_land=False)["ohc_20_100"][0, 1] == 0   # NaN still no water
     print("[selfcheck] heat content by layer; missing and below-floor cells count as no water")
 
 

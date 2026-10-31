@@ -187,3 +187,21 @@ def degree_days_gaussian(t2m_tyx, times, sigma_myx, avg_len=AVG_LEN, threshold=T
 def ym_key(times):
     idx = pd.DatetimeIndex(np.asarray(times))
     return list(zip(idx.year.tolist(), idx.month.tolist()))
+
+
+# Upper-ocean heat content above freezing (ocean-heat experiments, 2026-10-29)
+OCEAN_RHO_CP, T_FREEZE = 1025.0 * 3985.0, -1.8
+LAYERS = {"ohc_0_20": (0.0, 20.0), "ohc_20_100": (20.0, 100.0)}
+
+
+def layer_weights(bounds, top, bottom):
+    """Metres of each model level inside [top, bottom]."""
+    return np.clip(np.minimum(bounds[:, 1], bottom) - np.maximum(bounds[:, 0], top), 0, None)
+
+
+def heat_content(temp, bounds, zero_is_land=True):
+    """temp (levels, y, x) in C, missing (and 0.0 in NEMO output) = no water -> {layer: (y, x) MJ m^-2}."""
+    t = np.where(np.isfinite(temp) & ((temp != 0.0) | (not zero_is_land)), temp, np.nan)
+    excess = np.nan_to_num(np.clip(t - T_FREEZE, 0, None))
+    return {name: (OCEAN_RHO_CP * np.tensordot(layer_weights(bounds, a, b), excess, axes=(0, 0)) / 1e6).astype(np.float32)
+            for name, (a, b) in LAYERS.items()}

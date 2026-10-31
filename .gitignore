@@ -191,7 +191,7 @@ data/train_data/train_monthly.zarr/
 data/train_data/validation_monthly.zarr/
 
 # 
-data/
+/data/
 !data/train_data/.gitkeep
 !data/mdoels/.gitkeep
 !data/auxilliary/.gitkeep

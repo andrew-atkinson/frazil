@@ -1,0 +1,54 @@
+=== 1. Upper-ocean heat above freezing (MJ m^-2), annual means; cells in both oceans, north of 64 N
+
+ohc_0_20 (rise = 2009-18 mean minus the 1995-2014 training mean)
+               OPA mean  TOPAZ mean OPA trend/dec TOPAZ trend/dec TOPAZ 1995-2025  OPA rise  TOPAZ rise  r annual  r detrended
+sector                                                                                                                        
+East Siberian     41.76       35.76         +11±3            +8±2            +6±2      6.80        5.15      0.94         0.90
+Chukchi           64.29       61.57         +10±4           +13±3            +7±3      8.31       10.59      0.94         0.94
+Beaufort          37.08       42.26          +6±3            +3±3            +3±2      6.19        3.63      0.91         0.92
+Laptev            42.06       33.36          +8±3           +10±3           +12±2      6.81       10.41      0.89         0.84
+
+ohc_20_100 (rise = 2009-18 mean minus the 1995-2014 training mean)
+               OPA mean  TOPAZ mean OPA trend/dec TOPAZ trend/dec TOPAZ 1995-2025  OPA rise  TOPAZ rise  r annual  r detrended
+sector                                                                                                                        
+East Siberian    112.50      165.24         +15±5           +23±3           +30±3      6.13       18.07      0.57         0.17
+Chukchi          181.65      212.19         +26±6           +26±5           +23±4     18.95       23.51      0.50         0.02
+Beaufort         189.19      282.51         +39±5            +2±6           +17±4     38.37        5.42     -0.08        -0.28
+Laptev           125.17      165.34          -3±5           +63±6           +62±5     -7.66       68.54     -0.30        -0.48
+
+TOPAZ4b sea-surface temperature (C) and mixed-layer depth (m), annual mean and trend per decade, 1995-2025
+                SST   SST trend    MLD MLD trend
+sector                                          
+East Siberian -1.37  +0.06±0.02   9.93  +0.3±0.3
+Chukchi       -0.96  +0.09±0.04  11.96  +0.1±0.1
+Beaufort      -1.27  +0.03±0.03   7.43  +0.2±0.4
+Laptev        -1.26  +0.13±0.03  11.14  -1.1±0.7
+
+=== 2. Reanalysis thickness: ''; neXtSIM-OPA sit: area mean (cell_methods)
+
+September extent minus NSIDC-0051 (M km^2), mean over years
+sector                         East Siberian  Chukchi  Beaufort  Laptev
+period    source                                                       
+1995-2018 reanalysis                   0.144    0.077     0.106  -0.163
+          neXtSIM-OPA                  0.048    0.120     0.058  -0.061
+          v0.4.0 targets (QM)         -0.005    0.001    -0.001  -0.005
+2019-22   reanalysis                   0.123    0.064     0.197  -0.122
+          Frazil v0.4.0                0.163    0.086     0.012  -0.069
+
+Winter (Nov-Apr) mean thickness (m, area mean over the sector), and model minus reanalysis
+                                                 model  reanalysis  diff
+source                            sector                                
+neXtSIM-OPA (= the v0.4.0 target) Laptev          1.27        1.16  0.11
+                                  East Siberian   1.45        1.30  0.15
+                                  Chukchi         1.36        1.21  0.15
+                                  Beaufort        1.70        1.62  0.08
+Frazil v0.4.0                     Laptev          1.19        1.12  0.07
+                                  East Siberian   1.36        1.22  0.14
+                                  Chukchi         1.32        1.16  0.17
+                                  Beaufort        1.74        1.64  0.10
+
+April only, model minus reanalysis (m)
+sector                             East Siberian  Chukchi  Beaufort  Laptev
+source                                                                     
+neXtSIM-OPA (= the v0.4.0 target)           0.26     0.29      0.14    0.14
+Frazil v0.4.0                               0.29     0.33      0.22    0.14

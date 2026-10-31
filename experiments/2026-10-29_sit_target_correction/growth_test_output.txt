@@ -1,0 +1,42 @@
+growth, flat: Nov-Apr RMSE vs reanalysis over winters 2011-2014 by alpha: 0.55:0.399  0.60:0.383  0.65:0.371  0.70:0.364  0.75:0.361  0.80:0.364  0.85:0.372  0.90:0.385  0.95:0.402  1.00:0.422  -> alpha 0.75
+growth: Nov-Apr RMSE vs reanalysis over winters 2011-2014 by alpha: 0.55:0.383  0.60:0.372  0.65:0.366  0.70:0.363  0.75:0.364  0.80:0.369  0.85:0.378  0.90:0.390  0.95:0.405  1.00:0.422  -> alpha 0.7
+
+=== Out of sample, winters 2015-2018: thickness minus reanalysis (m), sector means
+              cell RMSE Nov-Apr  Apr ESS+Chukchi  Apr Beaufort  Apr Laptev  Apr central >82N  Apr all
+method                                                                                               
+teacher                   0.442            0.211         0.041       0.153             0.054    0.152
+static ratio              0.343           -0.094        -0.168       0.053            -0.040   -0.025
+growth, flat              0.412           -0.152        -0.321      -0.139            -0.313   -0.078
+growth                    0.403           -0.197        -0.296      -0.190            -0.204   -0.084
+
+=== April ratio to the teacher by year (reanalysis = what to match; 1995-2010 is where the methods differ unseen)
+
+ESS+Chukchi:
+              1996  2000  2005  2010  2011  2013  2015  2017  2018
+static ratio  0.84  0.84  0.84  0.84  0.84  0.84  0.84  0.83  0.84
+growth, flat  0.88  0.83  0.82  0.80  0.82  0.80  0.81  0.80  0.81
+growth        0.89  0.86  0.80  0.77  0.80  0.76  0.80  0.76  0.77
+reanalysis    0.79  0.84  0.85  0.83  0.88  0.80  0.85  0.96  0.97
+  trend per decade 2011-18: static ratio +0.00  growth, flat -0.01  growth -0.03  reanalysis +0.17
+  trend per decade 1995-2018: static ratio -0.00  growth, flat -0.04  growth -0.05
+
+Beaufort:
+              1996  2000  2005  2010  2011  2013  2015  2017  2018
+static ratio  0.90  0.89  0.89  0.90  0.89  0.90  0.90  0.89  0.90
+growth, flat  0.90  0.85  0.83  0.84  0.84  0.81  0.83  0.81  0.82
+growth        0.92  0.91  0.87  0.91  0.88  0.83  0.88  0.78  0.80
+reanalysis    0.81  0.85  0.86  0.80  0.89  0.87  0.91  1.15  0.98
+  trend per decade 2011-18: static ratio +0.01  growth, flat -0.02  growth -0.12  reanalysis +0.28
+  trend per decade 1995-2018: static ratio +0.00  growth, flat -0.03  growth -0.05
+
+all:
+              1996  2000  2005  2010  2011  2013  2015  2017  2018
+static ratio  0.87  0.86  0.85  0.86  0.85  0.85  0.85  0.85  0.85
+growth, flat  0.86  0.83  0.82  0.81  0.82  0.80  0.82  0.81  0.81
+growth        0.86  0.85  0.82  0.81  0.82  0.80  0.82  0.79  0.79
+reanalysis    0.86  0.87  0.89  0.84  0.87  0.81  0.89  0.92  0.88
+  trend per decade 2011-18: static ratio +0.01  growth, flat -0.01  growth -0.03  reanalysis +0.07
+  trend per decade 1995-2018: static ratio -0.01  growth, flat -0.03  growth -0.04
+
+=== April volume trend of the targets, 1995-2018 (km^3 per decade; the teacher's is what a correction should not flatten or steepen without cause)
+  teacher: 24999 km^3, -2320  static ratio: 21691 km^3, -2130  growth, flat: 20765 km^3, -2684  growth: 20953 km^3, -2885

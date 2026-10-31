@@ -1,0 +1,8 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "baseline": "2011-2018",
+ "datacube": "data/train_data/monthly_datacube_sicqmw9",
+ "out_dir": "data/train_data/monthly_datacube_sicqmw9_sitra",
+ "reference": "data/train_data/nextsim_reanalysis_sit_monthly.nc",
+ "selfcheck": false
+}

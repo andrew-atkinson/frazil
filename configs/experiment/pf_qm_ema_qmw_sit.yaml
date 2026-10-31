@@ -1,0 +1,24 @@
+# @package _global_
+# SENSITIVITY TEST, not a correction (experiments/2026-10-29_sit_target_correction: the data
+# supports neither a fixed nor a time-varying thickness correction). Exactly
+# pf_qm_ema_qmw (v0.4.0: seeded from monthly_pf_qm, 20k steps, EMA 0.999, seed 1, 9-year
+# windowed QM concentration), with the thickness targets also scaled towards the
+# CS2SMOS-constrained neXtSIM reanalysis (correct_sit_targets.py: per cell and month,
+# fitted on 2011-2018; the teacher's Pacific-shelf ice was 0.26-0.29 m too thick by April).
+# A/B partner: monthly_pf_qm_ema_qmw (v0.4.0, same seed).
+#
+# Prereq:  python scripts/data/correct_sit_targets.py
+#          python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqmw9_sitra --suffix _sicqmw9_sitra
+# After:   the ERA5 hindcast (starting from the corrected December 2018 state), drift.py --run --fields,
+#          then scorecard.py --model monthly_pf_qm_ema_qmw_sit
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_qmw_sit
+defaults:
+  - pf_qm_ema
+  - _self_
+
+exp_name: monthly_pf_qm_ema_qmw_sit
+seed: 1
+
+data:
+  suffix: _sicqmw9_sitra

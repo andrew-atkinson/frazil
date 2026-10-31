@@ -4,7 +4,12 @@ All notable changes to Frazil. Format: [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
+### Fixed
+- `.gitignore`: `data/` matched every folder named `data`, so new files in `scripts/data/` were silently left out (`degree_day_spread.py` and `spread_degree_days.py` had never been committed); now only the top-level `/data/`.
+
 ### Added
+- [sit_target_correction](experiments/2026-10-29_sit_target_correction/): `scripts/data/correct_sit_targets.py` (thickness targets scaled towards the CS2SMOS-constrained neXtSIM reanalysis), the `_sicqmw9_sitra` targets and the recipe `pf_qm_ema_qmw_sit` (a sensitivity test: trained, April shelf thickness fixed but September bias +0.082 → +0.219 because the corrected targets melt 15% less). A growth-based, time-following correction was tested and rejected (over-corrects out of sample, trends the wrong way); the data supports neither a fixed nor a time-varying thickness correction.
+- [ocean_input_and_teacher_checks](experiments/2026-10-29_ocean_input_and_teacher_checks/): `scripts/download/topaz_ocean_heat.py` (TOPAZ4b upper-ocean heat) and `scripts/download/nextsim_reanalysis.py` (the Copernicus neXtSIM reanalysis on the model grid). TOPAZ matches the teacher's ocean only in the mixed layer; the reanalysis is too icy on the Pacific shelves in September too; the teacher's (and Frazil's) Pacific-shelf ice is 0.26–0.33 m too thick by April, uncorrected by the concentration-only QM.
 - [pacific_shelf_ocean_heat](experiments/2026-10-29_pacific_shelf_ocean_heat/): literature review (Pacific Water heat, stored subsurface heat, river heat, ice import) matched to the regional findings; `scripts/download/nextsim_ocean_heat.py` (the training simulation's upper-ocean heat content) and the step-1 analysis. Local copies of sources in a gitignored `literature/` folder.
 - [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) results: the Pacific-shelf September excess is the model's own (+0.09–0.12 above its target, which matches NSIDC), and in the East Siberian and Beaufort seas it builds over 4–5 years as the ice thickens. Erratum on the drift protocol's "no drift" (pan-Arctic only).
 - `freerun_monthly.py --snapshot-months` (save only some calendar months) and `drift.py --fields` (the drift runs with June–October concentration saved), for the [regional_model_vs_target](experiments/2026-10-25_regional_model_vs_target/) analysis; a slow test for the month filter.
