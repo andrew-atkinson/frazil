@@ -29,17 +29,11 @@ import pandas as pd
 import xarray as xr
 
 from frazil import paths
-from frazil.preprocess import LAYERS, build_nearest_index, heat_content, regrid_time
+from frazil.preprocess import LAYERS, build_nearest_index, heat_content, level_bounds, regrid_time
 
 DATASET = "cmems_mod_arc_phy_my_topaz4_P1M"
 CHUNK = 50
 LAT_MIN = 64.0
-
-
-def level_bounds(depth):
-    """[top, bottom] per level: midpoints between level depths, from the surface to the last level."""
-    mid = (depth[1:] + depth[:-1]) / 2
-    return np.stack([np.r_[0.0, mid], np.r_[mid, depth[-1]]], axis=1)
 
 
 def main(argv=None):

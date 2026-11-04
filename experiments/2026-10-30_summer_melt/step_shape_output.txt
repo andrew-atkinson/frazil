@@ -1,0 +1,89 @@
+=== 1. Response curve: Frazil's concentration change against the target's, cell by cell (area-weighted)
+
+freeze Oct-Nov, elsewhere:
+              target  frazil  share of cells  frazil / target
+d_bin                                                        
+(-0.8, -0.6]  -0.662  -0.344           0.000            0.520
+(-0.6, -0.4]  -0.486  -0.230           0.001            0.473
+(-0.4, -0.2]  -0.268  -0.085           0.005            0.318
+(-0.2, -0.0]  -0.035   0.015           0.190           -0.422
+(-0.0, 0.2]    0.077   0.089           0.436            1.160
+(0.2, 0.4]     0.293   0.288           0.159            0.983
+(0.4, 0.6]     0.497   0.476           0.110            0.958
+(0.6, 0.8]     0.687   0.646           0.079            0.940
+(0.8, 1.0]     0.850   0.759           0.020            0.892
+  fits of Frazil's change on the target's:
+    degree 1: RMSE 0.1019, coefficients (high to low) +0.873 +0.033
+    degree 2: RMSE 0.1015, coefficients (high to low) +0.141 +0.784 +0.037
+    degree 3: RMSE 0.1007, coefficients (high to low) -0.470 +0.552 +0.735 +0.032
+
+freeze Oct-Nov, Pacific shelves:
+              target  frazil  share of cells  frazil / target
+d_bin                                                        
+(-0.8, -0.6]  -0.678  -0.324           0.000            0.478
+(-0.6, -0.4]  -0.472  -0.356           0.001            0.754
+(-0.4, -0.2]  -0.286  -0.178           0.003            0.620
+(-0.2, -0.0]  -0.038   0.023           0.067           -0.600
+(-0.0, 0.2]    0.096   0.099           0.378            1.040
+(0.2, 0.4]     0.291   0.275           0.209            0.943
+(0.4, 0.6]     0.500   0.464           0.164            0.929
+(0.6, 0.8]     0.693   0.638           0.138            0.921
+(0.8, 1.0]     0.850   0.757           0.040            0.890
+  fits of Frazil's change on the target's:
+    degree 1: RMSE 0.1028, coefficients (high to low) +0.875 +0.024
+    degree 2: RMSE 0.1027, coefficients (high to low) +0.063 +0.828 +0.027
+    degree 3: RMSE 0.1023, coefficients (high to low) -0.282 +0.343 +0.778 +0.026
+
+melt Jun-Sep, elsewhere:
+              target  frazil  share of cells  frazil / target
+d_bin                                                        
+(-1.0, -0.8]  -0.851  -0.620           0.007            0.728
+(-0.8, -0.6]  -0.681  -0.542           0.051            0.797
+(-0.6, -0.4]  -0.493  -0.417           0.105            0.846
+(-0.4, -0.2]  -0.288  -0.276           0.170            0.960
+(-0.2, -0.0]  -0.076  -0.099           0.536            1.295
+(-0.0, 0.2]    0.051  -0.020           0.119           -0.386
+(0.2, 0.4]     0.275   0.106           0.010            0.384
+(0.4, 0.6]     0.475   0.206           0.002            0.434
+(0.6, 0.8]     0.689   0.265           0.000            0.384
+(0.8, 1.0]     0.850   0.373           0.000            0.439
+  fits of Frazil's change on the target's:
+    degree 1: RMSE 0.1094, coefficients (high to low) +0.735 -0.050
+    degree 2: RMSE 0.1094, coefficients (high to low) +0.002 +0.736 -0.050
+    degree 3: RMSE 0.1088, coefficients (high to low) -0.406 -0.265 +0.740 -0.044
+
+melt Jun-Sep, Pacific shelves:
+              target  frazil  share of cells  frazil / target
+d_bin                                                        
+(-1.0, -0.8]  -0.865  -0.605           0.004            0.699
+(-0.8, -0.6]  -0.674  -0.554           0.033            0.822
+(-0.6, -0.4]  -0.486  -0.377           0.112            0.775
+(-0.4, -0.2]  -0.285  -0.243           0.215            0.853
+(-0.2, -0.0]  -0.087  -0.095           0.538            1.088
+(-0.0, 0.2]    0.058   0.029           0.089            0.501
+(0.2, 0.4]     0.277   0.151           0.007            0.545
+(0.4, 0.6]     0.478   0.274           0.002            0.573
+(0.6, 0.8]     0.658   0.290           0.000            0.441
+(0.8, 1.0]     0.833   0.037           0.000            0.045
+  fits of Frazil's change on the target's:
+    degree 1: RMSE 0.1127, coefficients (high to low) +0.744 -0.028
+    degree 2: RMSE 0.1127, coefficients (high to low) +0.015 +0.752 -0.028
+    degree 3: RMSE 0.1126, coefficients (high to low) -0.165 -0.093 +0.750 -0.026
+
+=== 2. Error (Frazil - target change) by starting concentration, Pacific shelves, by month (area-weighted mean)
+month             6      7      8      9      10     11
+start_bin                                              
+(-0.01, 0.15] -0.015 -0.035 -0.005  0.040 -0.044 -0.028
+(0.15, 0.5]   -0.023 -0.020  0.021  0.098 -0.024 -0.028
+(0.5, 0.8]    -0.002  0.029  0.069  0.081  0.014 -0.004
+(0.8, 0.95]   -0.032  0.029 -0.052  0.012  0.042  0.004
+(0.95, 1.0]   -0.017 -0.007 -0.119 -0.042 -0.001  0.002
+
+share of shelf ice area by starting concentration and month
+month            6     7     8     9     10    11
+start_bin                                        
+(-0.01, 0.15]  0.00  0.00  0.01  0.03  0.03  0.01
+(0.15, 0.5]    0.01  0.02  0.10  0.23  0.15  0.11
+(0.5, 0.8]     0.04  0.14  0.55  0.45  0.54  0.24
+(0.8, 0.95]    0.23  0.57  0.33  0.27  0.26  0.56
+(0.95, 1.0]    0.71  0.26  0.01  0.02  0.02  0.08

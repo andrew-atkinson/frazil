@@ -44,6 +44,16 @@ def build_nearest_index(src_lon, src_lat, tgt_lon, tgt_lat):
     return idx
 
 
+def append_channels(cube, extra):
+    """cube: (time, var_names, y, x) DataArray; extra: {name: (time, y, x)}."""
+    add = xr.DataArray(np.stack([extra[v] for v in extra], axis=1),
+                       dims=cube.dims,
+                       coords={**{k: v for k, v in cube.coords.items() if k != "var_names"},
+                               "var_names": list(extra)})
+    names = np.array([str(v) for v in cube["var_names"].values] + list(extra))   # concat would keep the old width: "ohc_20_100" -> "ohc_20_10"
+    return xr.concat([cube, add], dim="var_names").assign_coords(var_names=names)
+
+
 def regrid_time(field_tyx, idx, tgt_shape):
     """Regrid a (time, ys, xs) array to (time, YT, XT) by nearest-neighbour idx."""
     t = field_tyx.shape[0]
@@ -205,3 +215,9 @@ def heat_content(temp, bounds, zero_is_land=True):
     excess = np.nan_to_num(np.clip(t - T_FREEZE, 0, None))
     return {name: (OCEAN_RHO_CP * np.tensordot(layer_weights(bounds, a, b), excess, axes=(0, 0)) / 1e6).astype(np.float32)
             for name, (a, b) in LAYERS.items()}
+
+
+def level_bounds(depth):
+    """[top, bottom] per level: midpoints between level depths, from the surface to the last level."""
+    mid = (depth[1:] + depth[:-1]) / 2
+    return np.stack([np.r_[0.0, mid], np.r_[mid, depth[-1]]], axis=1)

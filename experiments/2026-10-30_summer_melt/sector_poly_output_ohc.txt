@@ -1,0 +1,133 @@
+47 one-step months, 2015-2018, 7 sectors. Errors as a share of the sector's ocean area (x100 = percent of the sector).
+
+=== Mean one-step extent error by month (M km^2)
+month                      1      2      3      4      5      6      7      8      9      10     11     12
+sector                                                                                                    
+Barents/Kara            0.013  0.026  0.027  0.001  0.002  0.115  0.060 -0.006  0.001  0.031 -0.012  0.041
+Beaufort                0.000  0.000  0.000  0.000  0.025 -0.001 -0.034  0.085  0.083 -0.034 -0.000  0.000
+Canadian/Baffin/Hudson  0.006  0.009 -0.008 -0.002 -0.017  0.021  0.027 -0.000 -0.056  0.081 -0.033  0.029
+Chukchi                -0.000  0.000  0.000  0.000  0.019  0.003  0.012  0.120  0.077 -0.090 -0.034 -0.013
+East Siberian           0.000  0.000  0.000  0.000 -0.000 -0.012 -0.058  0.003  0.007 -0.113  0.002 -0.000
+Greenland              -0.041  0.017 -0.041 -0.039  0.022  0.048  0.015  0.009 -0.014 -0.052 -0.016  0.005
+Laptev                  0.000  0.000  0.000  0.000 -0.000  0.006 -0.016  0.004  0.016 -0.006  0.006  0.000 
+
+=== melt May-Sep: error as a polynomial in starting cover; leave-one-year-out RMSE x100 by degree (in-sample in brackets); * = best out of sample
+                         n  error sd          deg 0          deg 1          deg 2          deg 3  best
+sector                                                                                                
+Barents/Kara            20      1.83    1.80 (1.79)    1.63 (1.60)  1.63 (1.55) *    2.13 (1.47)     2
+Laptev                  20      2.28  2.24 (2.22) *    2.42 (2.11)    2.84 (2.11)    3.67 (2.08)     0
+East Siberian           20      2.19    2.23 (2.13)  2.18 (1.98) *    2.21 (1.94)    2.27 (1.88)     1
+Chukchi                 20      5.27    5.40 (5.14)  5.14 (4.55) *    5.34 (4.47)    5.54 (4.47)     1
+Beaufort                20      4.07    4.20 (3.97)  3.94 (3.47) *    4.37 (3.47)    7.00 (3.42)     1
+Canadian/Baffin/Hudson  20      1.27    1.31 (1.24)    1.26 (1.12)    1.24 (1.03)  1.23 (1.01) *     3
+Greenland               20      0.24    0.26 (0.23)    0.25 (0.22)  0.22 (0.19) *    0.23 (0.17)     2 
+
+=== melt May-Sep: error as a polynomial in time of year; leave-one-year-out RMSE x100 by degree (in-sample in brackets); * = best out of sample
+                         n  error sd          deg 0        deg 1          deg 2          deg 3  best
+sector                                                                                              
+Barents/Kara            20      1.83    1.80 (1.79)  1.75 (1.70)    1.57 (1.49)  1.27 (1.05) *     3
+Laptev                  20      2.28  2.24 (2.22) *  2.34 (2.20)    2.58 (2.15)    2.72 (2.14)     0
+East Siberian           20      2.19    2.23 (2.13)  2.31 (2.11)  2.17 (1.85) *    2.23 (1.84)     2
+Chukchi                 20      5.27    5.40 (5.14)  5.25 (4.49)    5.29 (4.47)  5.21 (4.05) *     3
+Beaufort                20      4.07    4.20 (3.97)  4.03 (3.49)    3.71 (3.11)  3.63 (2.92) *     3
+Canadian/Baffin/Hudson  20      1.27    1.31 (1.24)  1.28 (1.19)  1.19 (0.98) *    1.24 (0.98)     2
+Greenland               20      0.24    0.26 (0.23)  0.24 (0.20)  0.24 (0.20) *    0.24 (0.19)     2 
+
+=== freeze Oct-Apr: error as a polynomial in starting cover; leave-one-year-out RMSE x100 by degree (in-sample in brackets); * = best out of sample
+                         n  error sd          deg 0          deg 1          deg 2        deg 3        deg 4  best
+sector                                                                                                           
+Barents/Kara            27      1.28  1.27 (1.25) *    1.29 (1.25)    1.42 (1.24)  1.51 (1.24)  1.66 (1.23)     0
+Laptev                  27      2.01  2.05 (1.97) *    2.48 (1.97)    2.38 (1.69)  2.41 (1.38)  3.97 (1.17)     0
+East Siberian           27      3.57    3.59 (3.50)  3.33 (2.50) *    3.66 (2.04)  4.40 (1.96)  5.82 (1.72)     1
+Chukchi                 27      3.25    3.25 (3.19)    2.53 (2.15)  2.31 (1.70) *  2.56 (1.51)  2.54 (1.34)     2
+Beaufort                27      1.08    1.08 (1.06)    0.80 (0.67)  0.58 (0.45) *  0.70 (0.45)  2.50 (0.44)     2
+Canadian/Baffin/Hudson  27      1.18    1.19 (1.16)  1.15 (1.10) *    1.17 (1.09)  1.22 (0.98)  1.27 (0.96)     1
+Greenland               27      0.31  0.34 (0.30) *    0.36 (0.30)    0.35 (0.29)  0.35 (0.29)  0.35 (0.29)     0 
+
+=== freeze Oct-Apr: error as a polynomial in time of year; leave-one-year-out RMSE x100 by degree (in-sample in brackets); * = best out of sample
+                         n  error sd          deg 0          deg 1        deg 2          deg 3          deg 4  best
+sector                                                                                                             
+Barents/Kara            27      1.28  1.27 (1.25) *    1.31 (1.25)  1.36 (1.25)    1.42 (1.24)    1.46 (1.24)     0
+Laptev                  27      2.01  2.05 (1.97) *    2.11 (1.97)  2.19 (1.97)    2.40 (1.97)    2.41 (1.97)     0
+East Siberian           27      3.57    3.59 (3.50)    3.56 (3.39)  3.51 (3.26)    3.39 (2.87)  3.39 (2.86) *     4
+Chukchi                 27      3.25    3.25 (3.19)    2.99 (2.83)  2.94 (2.73)  2.71 (2.26) *    2.73 (2.26)     3
+Beaufort                27      1.08    1.08 (1.06)    1.06 (1.02)  1.04 (0.97)    0.97 (0.83)  0.97 (0.82) *     4
+Canadian/Baffin/Hudson  27      1.18    1.19 (1.16)  1.18 (1.13) *  1.20 (1.13)    1.18 (1.09)    1.19 (1.07)     1
+Greenland               27      0.31    0.34 (0.30)    0.34 (0.30)  0.34 (0.29)    0.34 (0.28)  0.33 (0.27) *     4 
+
+=== Summary: best degree out of sample, and how much it beats a constant (deg 0) and a line (deg 1), RMSE x100
+                                             best  cv_best  cv_0  cv_1  gain vs const  gain vs line
+half           x     sector                                                                        
+melt May-Sep   cover Barents/Kara               2     1.63  1.80  1.63           0.17          0.01
+                     Laptev                     0     2.24  2.24  2.42           0.00          0.18
+                     East Siberian              1     2.18  2.23  2.18           0.05          0.00
+                     Chukchi                    1     5.14  5.40  5.14           0.26          0.00
+                     Beaufort                   1     3.94  4.20  3.94           0.26          0.00
+                     Canadian/Baffin/Hudson     3     1.23  1.31  1.26           0.08          0.03
+                     Greenland                  2     0.22  0.26  0.25           0.04          0.03
+               doy   Barents/Kara               3     1.27  1.80  1.75           0.53          0.48
+                     Laptev                     0     2.24  2.24  2.34           0.00          0.10
+                     East Siberian              2     2.17  2.23  2.31           0.06          0.14
+                     Chukchi                    3     5.21  5.40  5.25           0.19          0.04
+                     Beaufort                   3     3.63  4.20  4.03           0.57          0.40
+                     Canadian/Baffin/Hudson     2     1.19  1.31  1.28           0.11          0.09
+                     Greenland                  2     0.24  0.26  0.24           0.02          0.00
+freeze Oct-Apr cover Barents/Kara               0     1.27  1.27  1.29           0.00          0.02
+                     Laptev                     0     2.05  2.05  2.48           0.00          0.42
+                     East Siberian              1     3.33  3.59  3.33           0.26          0.00
+                     Chukchi                    2     2.31  3.25  2.53           0.94          0.22
+                     Beaufort                   2     0.58  1.08  0.80           0.51          0.22
+                     Canadian/Baffin/Hudson     1     1.15  1.19  1.15           0.03          0.00
+                     Greenland                  0     0.34  0.34  0.36           0.00          0.02
+               doy   Barents/Kara               0     1.27  1.27  1.31           0.00          0.04
+                     Laptev                     0     2.05  2.05  2.11           0.00          0.06
+                     East Siberian              4     3.39  3.59  3.56           0.20          0.17
+                     Chukchi                    3     2.71  3.25  2.99           0.54          0.28
+                     Beaufort                   4     0.97  1.08  1.06           0.11          0.09
+                     Canadian/Baffin/Hudson     1     1.18  1.19  1.18           0.01          0.00
+                     Greenland                  4     0.33  0.34  0.34           0.01          0.01
+
+=== Melt half, by year: mean error (M km^2) per sector - does the relationship move from year to year?
+year                     2015   2016   2017   2018
+sector                                            
+Barents/Kara            0.026  0.028  0.043  0.041
+Beaufort                0.056  0.044 -0.007  0.035
+Canadian/Baffin/Hudson -0.005 -0.013 -0.028  0.025
+Chukchi                 0.046  0.081  0.010  0.047
+East Siberian          -0.025  0.008 -0.013 -0.017
+Greenland               0.024  0.001 -0.003  0.044
+Laptev                  0.003 -0.005  0.004  0.006
+
+=== Melt half, straight line in starting cover: error x100 = a + b x cover (b < 0: error grows as the sector opens up); share of variance explained
+  Barents/Kara             a -0.89  b +4.53  R^2 0.20   cover range 0.15-0.72
+  Laptev                   a +3.34  b -3.69  R^2 0.10   cover range 0.42-1.00
+  East Siberian            a +3.16  b -4.37  R^2 0.13   cover range 0.44-1.00
+  Chukchi                  a +12.76  b -11.67  R^2 0.22   cover range 0.40-1.00
+  Beaufort                 a +14.23  b -13.80  R^2 0.24   cover range 0.53-1.00
+  Canadian/Baffin/Hudson   a -1.60  b +2.16  R^2 0.18   cover range 0.27-0.93
+  Greenland                a -0.14  b +2.82  R^2 0.13   cover range 0.04-0.14
+
+=== Straight lines per sector, both halves: error x100 = a + b x cover. Slope +- standard error, the range of b over
+    leave-one-year-out fits, R^2, and out-of-sample RMSE x100 of the line vs a constant (a per-sector mean)
+                                           a      b  b se b, leave-one-year-out   R^2  RMSE line  RMSE const  line wins
+half           sector                                                                                                  
+melt May-Sep   Barents/Kara            -0.89   4.53  2.15          +3.6 to +5.2  0.20       1.63        1.80       True
+               Laptev                   3.34  -3.69  2.64          -7.0 to -1.0  0.10       2.42        2.24      False
+               East Siberian            3.16  -4.37  2.62          -5.2 to -1.8  0.13       2.18        2.23       True
+               Chukchi                 12.76 -11.67  5.24         -14.8 to -6.7  0.22       5.14        5.40       True
+               Beaufort                14.23 -13.80  5.84         -18.9 to -9.3  0.24       3.94        4.20       True
+               Canadian/Baffin/Hudson  -1.60   2.16  1.08          +1.7 to +3.3  0.18       1.26        1.31       True
+               Greenland               -0.14   2.82  1.74          +2.2 to +3.3  0.13       0.25        0.26       True
+freeze Oct-Apr Barents/Kara             0.59  -0.05  1.31          -0.7 to +0.3  0.00       1.29        1.27      False
+               Laptev                   0.16  -0.18  1.80          -3.1 to +3.6  0.00       2.48        2.05      False
+               East Siberian          -10.52  10.89  2.23         +4.8 to +14.5  0.49       3.33        3.59       True
+               Chukchi                 -8.60   9.02  1.64         +6.6 to +11.1  0.55       2.53        3.25       True
+               Beaufort                -4.56   4.67  0.77          +3.5 to +5.6  0.60       0.80        1.08       True
+               Canadian/Baffin/Hudson   1.22  -1.33  0.81          -1.7 to -0.9  0.10       1.15        1.19       True
+               Greenland               -0.17   0.12  1.95          -1.7 to +1.3  0.00       0.36        0.34      False
+
+=== One shared line, or one per sector? Out-of-sample RMSE x100 over the sectors in each group (leave one year out)
+  melt May-Sep    Pacific shelves (E. Siberian, Chukchi, Beaufort)   shared line 4.04 (a +11.0, b -11.0)   per-sector lines 3.95
+  melt May-Sep    all 7 sectors                                      shared line 3.19 (a +1.1, b -0.4)   per-sector lines 2.85
+  freeze Oct-Apr  Pacific shelves (E. Siberian, Chukchi, Beaufort)   shared line 2.37 (a -8.4, b +8.8)   per-sector lines 2.46
+  freeze Oct-Apr  all 7 sectors                                      shared line 2.22 (a -0.9, b +0.8)   per-sector lines 1.98

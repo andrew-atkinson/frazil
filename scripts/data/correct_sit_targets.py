@@ -19,6 +19,9 @@ Pacific shelves), and the reanalysis's weaker melt is unconstrained (its Septemb
 icy there). So May-September ratios are interpolated per cell from April's to October's:
 the teacher's summer physics is kept, starting from the corrected spring ice, and there is
 no jump in May or October.
+WARNING: that interpolation was a mistake. It made up a summer melt about 15% weaker than
+the teacher's, and Frazil learned it (September bias +0.08 -> +0.22). Kept only to
+reproduce the sensitivity test.
 ONLY the sit channel changes. Thickness is a grid-cell mean in both.
 
 Status: a sensitivity test only. One ratio for all years assumes the teacher's excess is

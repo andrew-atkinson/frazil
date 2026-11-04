@@ -40,19 +40,47 @@ monthly_pf_qm_ema_qmw_sit Laptev        -0.104 -0.062 -0.051 -0.060
                           Beaufort       0.022  0.035  0.069  0.032
                           pan-Arctic     0.008  0.004  0.003 -0.001
 
-ext (M km^2 extent)
+ext (M km^2, extent > 15%)
 month                                        6      7      8      9
 model                     sector                                   
-monthly_pf_qm_ema_qmw     Laptev         0.022  0.006 -0.015 -0.014
-                          East Siberian  0.006 -0.019  0.099  0.101
-                          Chukchi        0.030  0.003  0.135  0.143
-                          Beaufort       0.017 -0.004  0.086  0.118
-                          pan-Arctic     0.345  0.081  0.312  0.256
-monthly_pf_qm_ema_qmw_sit Laptev         0.026  0.028  0.020  0.008
-                          East Siberian  0.007 -0.003  0.124  0.122
-                          Chukchi        0.032  0.001  0.142  0.150
-                          Beaufort       0.018 -0.001  0.084  0.120
-                          pan-Arctic     0.380  0.163  0.425  0.348
+monthly_pf_qm_ema_qmw     Laptev         0.011 -0.014 -0.045 -0.039
+                          East Siberian  0.002 -0.039  0.075  0.085
+                          Chukchi        0.025 -0.002  0.121  0.123
+                          Beaufort       0.012 -0.010  0.079  0.108
+                          pan-Arctic     0.237 -0.014  0.194  0.157
+monthly_pf_qm_ema_qmw_sit Laptev         0.015  0.007 -0.008 -0.013
+                          East Siberian  0.004 -0.022  0.098  0.105
+                          Chukchi        0.027 -0.004  0.124  0.128
+                          Beaufort       0.013 -0.007  0.078  0.110
+                          pan-Arctic     0.274  0.067  0.307  0.249
+
+area (M km^2, ice area)
+month                                        6      7      8      9
+model                     sector                                   
+monthly_pf_qm_ema_qmw     Laptev        -0.013 -0.053 -0.093 -0.057
+                          East Siberian -0.029 -0.003  0.047  0.085
+                          Chukchi       -0.013  0.040  0.083  0.095
+                          Beaufort       0.014  0.029  0.056  0.088
+                          pan-Arctic    -0.003 -0.026 -0.033  0.116
+monthly_pf_qm_ema_qmw_sit Laptev         0.002 -0.027 -0.057 -0.029
+                          East Siberian -0.019  0.016  0.077  0.109
+                          Chukchi       -0.012  0.041  0.092  0.102
+                          Beaufort       0.016  0.028  0.065  0.092
+                          pan-Arctic     0.055  0.050  0.102  0.220
+
+loose (M km^2, extent of 15-80% ice)
+month                                        6      7      8      9
+model                     sector                                   
+monthly_pf_qm_ema_qmw     Laptev         0.045  0.140  0.022 -0.003
+                          East Siberian  0.059 -0.086  0.056  0.012
+                          Chukchi        0.106 -0.086  0.116  0.045
+                          Beaufort       0.013 -0.063  0.106  0.035
+                          pan-Arctic     0.552  0.166  0.439 -0.024
+monthly_pf_qm_ema_qmw_sit Laptev         0.013  0.126  0.043  0.011
+                          East Siberian  0.037 -0.101  0.045  0.001
+                          Chukchi        0.103 -0.093  0.109  0.039
+                          Beaufort       0.007 -0.069  0.086  0.033
+                          pan-Arctic     0.486  0.129  0.430 -0.021
 
 June-to-September thickness loss (m): Frazil / target / ratio
                                          frazil  target  ratio
@@ -67,3 +95,15 @@ monthly_pf_qm_ema_qmw_sit Beaufort        1.029   1.039  0.990
                           East Siberian   1.254   1.192  1.053
                           Laptev          1.137   1.181  0.963
                           pan-Arctic      0.460   0.451  1.020
+
+August-September, Pacific shelves (East Siberian + Chukchi + Beaufort): Frazil minus target by lead year
+var                               ext   area  loose    sit     n
+model                     lead                                  
+monthly_pf_qm_ema_qmw     1     0.149  0.183 -0.065 -0.015   7.0
+                          2     0.269  0.193  0.165  0.002   7.0
+                          3     0.270  0.257  0.076  0.024   7.0
+                          4+    0.345  0.239  0.280  0.056  28.0
+monthly_pf_qm_ema_qmw_sit 1     0.165  0.226 -0.137  0.003   7.0
+                          2     0.313  0.246  0.148 -0.003   7.0
+                          3     0.284  0.283  0.047  0.022   7.0
+                          4+    0.373  0.281  0.258  0.064  28.0

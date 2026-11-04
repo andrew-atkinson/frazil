@@ -7,6 +7,7 @@
  "n_ens": 1,
  "no_log": false,
  "note": "",
+ "save_fields": null,
  "train_config": "configs/config_train_monthly_mac.yaml",
  "val_start_year": 2015
 }

@@ -1,0 +1,81 @@
+# @package _global_
+# DIAGNOSTIC, not a release candidate (experiments/2026-10-30_summer_melt): does the
+# training simulation's own upper-ocean heat fix the Pacific-shelf melt error over the
+# shelf break and slope? Exactly pf_qm_ema_qmw (v0.4.0: seeded from monthly_pf_qm, 20k
+# steps, EMA 0.999, seed 1, 9-year windowed QM concentration), plus two forcing channels:
+# neXtSIM-OPA heat content above freezing at 0-20 m and 20-100 m (MJ m^-2), Pacific and
+# Siberian shelf box only (the in-box mean elsewhere), LAGGED one month so the t+1 input
+# holds month t's heat and can't leak the t+1 ice edge (add_ocean_heat_channels.py).
+# neXtSIM-OPA ends in 2018, so this model can't run the 2019-2025 hindcasts; score it with
+# the one-month check on 2015-2018 (eval_monthly.py --save-fields, then the summer_melt scripts).
+# A/B partner: monthly_pf_qm_ema_qmw (v0.4.0, same seed).
+#
+# The new channels' input weights start at zero (gensim.utils.expand_forcing_channels).
+# Encoder: v0.4.0's stats + ohc_0_20 (mean 47.1358, std 92.4716) and ohc_20_100 (mean
+# 150.0076, std 129.9510), in-box ocean 1995-2018, from extra_forcing_stats.json, inserted
+# after the 4th and 8th forcing entries.
+#
+# Prereq:  python scripts/data/add_ocean_heat_channels.py
+#          python scripts/data/build_zarr_monthly.py --datacube-dir data/train_data/monthly_datacube_sicqmw9_ohc --suffix _sicqmw9_ohc --extra-forcings ohc_0_20 ohc_20_100
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_qmw_ohc
+defaults:
+  - pf_qm_ema_qmw
+  - _self_
+
+exp_name: monthly_pf_qm_ema_qmw_ohc
+
+surrogate:
+  network:
+    n_input: 28
+  encoder:
+    mean:
+    - 0.8547
+    - 0.4886
+    - 0.3648
+    - -0.0026
+    - -0.0079
+    - 0.0767
+    - 268.4823
+    - 0.003
+    - 0.4319
+    - -0.3839
+    - 47.1358
+    - 150.0076
+    - 268.4823
+    - 0.003
+    - 0.4319
+    - -0.3839
+    - 47.1358
+    - 150.0076
+    - 3.636
+    - 6.5036
+    - 3.6278
+    - 6.5308
+    std:
+    - 1.0143
+    - 0.4627
+    - 0.4095
+    - 0.0294
+    - 0.0351
+    - 0.1232
+    - 12.3422
+    - 0.0023
+    - 2.3709
+    - 2.2041
+    - 92.4716
+    - 129.9510
+    - 12.3422
+    - 0.0023
+    - 2.3709
+    - 2.2041
+    - 92.4716
+    - 129.9510
+    - 5.0006
+    - 8.946
+    - 4.2851
+    - 5.1714
+
+data:
+  suffix: _sicqmw9_ohc
+  forcing_variables: [tus, huss, uas, vas, ohc_0_20, ohc_20_100]

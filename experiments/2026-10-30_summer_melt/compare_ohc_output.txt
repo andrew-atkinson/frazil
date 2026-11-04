@@ -1,0 +1,88 @@
+=== 1. Input-weight norm per channel, EMA weights (inputs are normalised, so comparable)
+  tus         month t 3.110   month t+1 5.459
+  huss        month t 4.240   month t+1 5.290
+  uas         month t 2.252   month t+1 3.818
+  vas         month t 2.279   month t+1 4.033
+  ohc_0_20    month t 0.143   month t+1 0.287
+  ohc_20_100  month t 0.184   month t+1 0.216
+
+=== 2. One-step extent error, M km^2, mean over 2015-2018; change = |ohc| - |v0.4.0| of the means (negative = better). * = outside the heat box
+month                      7                    8                    9                    10              
+                       v0.4.0    ohc change v0.4.0    ohc change v0.4.0    ohc change v0.4.0    ohc change
+sector                                                                                                    
+Barents/Kara *          0.059  0.060  0.000 -0.005 -0.006  0.001  0.000  0.001  0.001  0.035  0.031 -0.004
+Beaufort               -0.028 -0.034  0.006  0.092  0.085 -0.006  0.102  0.083 -0.018 -0.031 -0.034  0.003
+Canadian/Baffin/Hudson  0.030  0.027 -0.002  0.001 -0.000 -0.001 -0.048 -0.056  0.008  0.085  0.081 -0.003
+Chukchi                 0.018  0.012 -0.007  0.119  0.120  0.002  0.091  0.077 -0.015 -0.077 -0.090  0.013
+East Siberian          -0.051 -0.058  0.007  0.012  0.003 -0.009  0.035  0.007 -0.028 -0.117 -0.113 -0.004
+Greenland *             0.013  0.015  0.003  0.009  0.009  0.000 -0.014 -0.014 -0.000 -0.053 -0.052 -0.000
+Laptev                 -0.021 -0.016 -0.005  0.017  0.004 -0.013  0.027  0.016 -0.011 -0.006 -0.006 -0.000
+Pacific shelves        -0.061 -0.081  0.020  0.223  0.209 -0.014  0.228  0.167 -0.060 -0.225 -0.237  0.012
+pan-Arctic              0.019  0.005 -0.014  0.245  0.217 -0.029  0.192  0.114 -0.078 -0.164 -0.184  0.020
+
+=== 3. Pacific shelves by year: extent error, M km^2
+      v0.4.0                  ohc               ohc - v0.4.0              
+month     8      9      10     8      9      10           8      9      10
+year                                                                      
+2015   0.189  0.294 -0.040  0.171  0.255 -0.051       -0.018 -0.039 -0.011
+2016   0.482  0.312 -0.493  0.442  0.215 -0.536       -0.040 -0.097 -0.042
+2017   0.069  0.097 -0.085  0.062  0.052 -0.078       -0.007 -0.045  0.007
+2018   0.151  0.208 -0.283  0.161  0.148 -0.285        0.010 -0.061 -0.002
+
+=== 4. Concentration RMSE, ensemble mean, by region and season
+                                     v0.4.0     ohc  change %
+region               season                                  
+Pacific shelves      freeze Oct-Apr  0.0628  0.0620   -1.2648
+                     melt May-Sep    0.1129  0.1113   -1.4198
+outside the box      freeze Oct-Apr  0.0599  0.0599   -0.0036
+                     melt May-Sep    0.0625  0.0627    0.3978
+rest of the heat box freeze Oct-Apr  0.0580  0.0570   -1.6710
+                     melt May-Sep    0.1254  0.1255    0.1138
+
+melt half, by year:
+year                  2015  2016  2017  2018
+region                                      
+Pacific shelves      -2.08 -0.72 -1.22 -1.63
+outside the box      -0.06  0.80  0.16  0.71
+rest of the heat box  1.07  0.52 -0.97  0.23
+
+=== 5a. Pacific shelves: error in the month's concentration change by seafloor depth (positive = too much ice)
+         v0.4.0                  ohc              
+month         7      8      9      7      8      9
+d_bin                                             
+<25 m     0.007  0.003 -0.017  0.003  0.002 -0.019
+25-50    -0.000 -0.010  0.012 -0.010 -0.007  0.004
+50-100    0.019 -0.015  0.069  0.013 -0.010  0.057
+100-200   0.039  0.035  0.085  0.030  0.037  0.067
+200-500   0.017  0.046  0.075  0.009  0.042  0.055
+500-1000  0.044  0.086  0.101  0.036  0.084  0.078
+>1000     0.020  0.034  0.080  0.022  0.036  0.068
+
+=== 5b. By starting concentration
+             v0.4.0                  ohc              
+month             7      8      9      7      8      9
+s_bin                                                 
+(0.149, 0.5] -0.020  0.021  0.098 -0.030  0.019  0.076
+(0.5, 0.8]    0.030  0.069  0.081  0.020  0.069  0.072
+(0.8, 0.95]   0.029 -0.052  0.012  0.027 -0.047  0.012
+(0.95, 1.0]  -0.007 -0.119 -0.042 -0.005 -0.116 -0.039
+
+=== 6. Pacific shelves, August and September: error by heat tercile (within each month), inside each starting-concentration class
+
+heat at 0-20 m (MJ m^-2, tercile means cool 23, mid 34, warm 97)
+             v0.4.0                  ohc              
+tercile        cool    mid   warm   cool    mid   warm
+s_bin                                                 
+(0.149, 0.5]  0.117  0.133  0.032  0.106  0.122  0.016
+(0.5, 0.8]    0.085  0.092  0.040  0.096  0.088  0.028
+(0.8, 0.95]  -0.041 -0.014 -0.048 -0.034 -0.013 -0.054
+(0.95, 1.0]  -0.036 -0.170 -0.276 -0.033 -0.165 -0.274
+
+heat at 20-100 m (MJ m^-2, tercile means cool 106, mid 184, warm 269)
+             v0.4.0                  ohc              
+tercile        cool    mid   warm   cool    mid   warm
+s_bin                                                 
+(0.149, 0.5]  0.040  0.092  0.079  0.038  0.077  0.056
+(0.5, 0.8]    0.061  0.062  0.098  0.066  0.059  0.088
+(0.8, 0.95]  -0.022 -0.045 -0.020 -0.018 -0.038 -0.023
+(0.95, 1.0]  -0.037 -0.139 -0.048 -0.035 -0.134 -0.044

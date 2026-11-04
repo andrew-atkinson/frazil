@@ -1,0 +1,47 @@
+=== Mean error (Frazil minus target concentration change, area-weighted) by distance, Pacific shelves vs elsewhere
+
+freeze Oct-Apr (open cells: distance to ice)
+                  error             share of area          
+sector  Pacific shelves elsewhere Pacific shelves elsewhere
+d_bin                                                      
+<25 km           -0.029     0.017           0.101     0.054
+25-50            -0.026     0.015           0.110     0.063
+50-100           -0.032     0.012           0.164     0.114
+100-200          -0.031     0.004           0.269     0.218
+200-400          -0.024    -0.000           0.297     0.382
+>400             -0.007    -0.001           0.059     0.169
+
+melt May-Sep (ice cells: distance to open water)
+                  error             share of area          
+sector  Pacific shelves elsewhere Pacific shelves elsewhere
+d_bin                                                      
+<25 km            0.017    -0.017           0.030     0.071
+25-50             0.024    -0.004           0.033     0.070
+50-100            0.028     0.005           0.053     0.096
+100-200           0.029     0.007           0.086     0.138
+200-400           0.039    -0.014           0.139     0.183
+>400              0.008    -0.001           0.658     0.442
+
+=== Straight lines, leave-one-year-out RMSE x100 (lower is better; cell-level noise dominates, so differences are small)
+                                        constant  sector open share  own start conc.  distance (per 100 km)  distance + start                   best
+half           sector                                                                                                                               
+freeze Oct-Apr Canadian/Baffin/Hudson     10.627             10.639           10.624                 10.526            10.477       distance + start
+               Greenland                   5.116              5.116            5.095                  5.125             5.098        own start conc.
+               Barents/Kara                9.673              9.680            9.677                  9.653             9.642       distance + start
+               Laptev                     13.208             13.416           13.219                 13.287            13.252               constant
+               Beaufort                   13.577             13.587           13.583                 13.777            13.781               constant
+               East Siberian              12.807             12.863           12.791                 12.737            12.804  distance (per 100 km)
+               Chukchi                    12.987             12.836           12.994                 13.040            13.055      sector open share
+               Pacific shelves, shared    13.026             12.896           13.019                 13.032            13.039      sector open share
+melt May-Sep   Canadian/Baffin/Hudson     11.555             11.543           11.557                 11.537            11.527       distance + start
+               Greenland                  10.912             10.906           10.898                 10.918            10.868       distance + start
+               Barents/Kara               15.065             15.008           15.064                 15.065            15.078      sector open share
+               Beaufort                   12.383             12.380           12.240                 12.436            12.224       distance + start
+               Chukchi                    12.087             11.448           11.599                 12.078            11.750      sector open share
+               Laptev                     13.771             13.864           13.766                 13.803            13.777        own start conc.
+               East Siberian              10.923             10.640           10.801                 10.922            10.822      sector open share
+               Pacific shelves, shared    11.840             11.512           11.611                 11.835            11.636      sector open share
+
+=== Pacific shelves, shared line in distance: err x100 = a + b x (km / 100), fitted on all four years
+  melt May-Sep    a +2.56  b -0.10
+  freeze Oct-Apr  a -3.36  b +0.40

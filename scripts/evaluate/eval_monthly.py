@@ -14,6 +14,10 @@ Resumable: progress is saved after every month pair to
 command continues from there (deleted when the run completes). Each pair draws
 from its own seed, so a resumed run gives exactly the uninterrupted result.
 
+--save-fields DIR also writes each prediction to DIR/pred_YYYYMM.nc (named by the
+predicted month): the ensemble-mean state and every member's sic, for analyses of
+where the one-month step goes wrong (experiments/2026-10-30_summer_melt/one_month.py).
+
 Run:  python scripts/evaluate/eval_monthly.py --ckpt data/models/monthly/last-v3.ckpt
 """
 from __future__ import annotations
@@ -39,7 +43,8 @@ from frazil.models import load_model, default_ckpt, load_val_cube, model_tag  # 
 from frazil import paths
 
 
-def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, state_file=None, seed=42):
+def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, state_file=None, seed=42,
+               save_dir=None):
     """One-month-ahead RMSE over ocean per state var. Returns {var: (rmse_model,
     rmse_persistence)}. With n_ens>1, the model is a generative ensemble -- draw
     n_ens members (the batch dim) and use the ensemble MEAN, which cancels
@@ -77,8 +82,11 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, st
         forc = rep(torch.as_tensor(forc[None], device=device, dtype=torch.float32))
         dd = rep(torch.as_tensor(arr(t, DEGREE)[None], device=device, dtype=torch.float32))
         with torch.no_grad():
-            pred = model(states[:, None], forc, resolution=resolution, mesh=mesh,
-                         mask=mask, degree_days=dd).mean(0).cpu().numpy()  # ensemble mean (6,H,W)
+            members = model(states[:, None], forc, resolution=resolution, mesh=mesh,
+                            mask=mask, degree_days=dd).cpu().numpy()  # (n_ens,6,H,W)
+        pred = members.mean(0)                                         # ensemble mean (6,H,W)
+        if save_dir:
+            save_prediction(save_dir, cube.time.values[t + 1], pred, members[:, STATES.index("sic")], ocean)
         truth = arr(t + 1, STATES)
         persist = arr(t, STATES)
         for i, v in enumerate(STATES):
@@ -97,6 +105,16 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, st
             for v in STATES}
 
 
+def save_prediction(save_dir, time, mean, sic_members, ocean):
+    """One predicted month: ensemble-mean state (var_names, y, x) and member sic (member, y, x), land NaN."""
+    land = lambda a: np.where(ocean, a, np.nan).astype(np.float32)
+    ds = xr.Dataset({"state": (("var_names", "y", "x"), land(mean)), "sic_members": (("member", "y", "x"), land(sic_members))},
+                    coords={"var_names": STATES, "time": time})
+    ym = np.datetime_as_string(time, unit="M").replace("-", "")
+    os.makedirs(save_dir, exist_ok=True)
+    ds.to_netcdf(os.path.join(save_dir, f"pred_{ym}.nc"), encoding={k: {"zlib": True, "complevel": 4} for k in ds.data_vars})
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=None, help="default: newest last*.ckpt")
@@ -107,6 +125,7 @@ def main(argv=None):
     ap.add_argument("--val-start-year", type=int, default=2015)
     ap.add_argument("--max-pairs", type=int, default=0, help="0 = all val pairs")
     ap.add_argument("--n-ens", type=int, default=1, help="ensemble members (mean)")
+    ap.add_argument("--save-fields", default=None, metavar="DIR", help="also save each prediction to DIR/pred_YYYYMM.nc")
     ap.add_argument("--note", default="", help="annotation stored with the logged result")
     ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
@@ -120,9 +139,10 @@ def main(argv=None):
     aux = xr.open_dataset(args.aux)
     print(f"[data] {cube.sizes['time']} val months  (n_ens={args.n_ens})")
     key = json.dumps([os.path.abspath(ckpt), os.path.getmtime(ckpt), os.path.abspath(args.datacube),
-                      args.val_start_year, args.max_pairs, args.n_ens])
+                      args.val_start_year, args.max_pairs, args.n_ens, args.save_fields])
     state_file = os.path.join(os.path.dirname(ckpt), f"eval_monthly_progress_{hashlib.sha1(key.encode()).hexdigest()[:10]}.json")
-    rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens, state_file=state_file)
+    rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens, state_file=state_file,
+                      save_dir=args.save_fields)
 
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
     print(f"  {'var':5s} {'Frazil':>10s} {'persistence':>12s} {'skill':>8s}")

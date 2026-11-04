@@ -1,0 +1,60 @@
+=== 1. Mean error (Frazil minus target concentration change, area-weighted) by seafloor depth
+
+freeze Oct-Apr (area = share of that group's cells in the sample)
+                         error                                            area                          
+group    Laptev + Barents/Kara Pacific shelves elsewhere Laptev + Barents/Kara Pacific shelves elsewhere
+d_bin                                                                                                   
+<25 m                   -0.003          -0.007     0.004                 0.146           0.087     0.031
+25-50                    0.005          -0.006     0.010                 0.126           0.150     0.046
+50-100                   0.011          -0.006     0.010                 0.117           0.082     0.095
+100-200                  0.016          -0.009     0.005                 0.107           0.040     0.167
+200-500                  0.021          -0.010     0.005                 0.107           0.069     0.257
+500-1000                 0.015          -0.012     0.001                 0.022           0.038     0.092
+>1000                    0.013           0.003     0.011                 0.375           0.534     0.312
+
+melt May-Sep (area = share of that group's cells in the sample)
+                         error                                            area                          
+group    Laptev + Barents/Kara Pacific shelves elsewhere Laptev + Barents/Kara Pacific shelves elsewhere
+d_bin                                                                                                   
+<25 m                   -0.009          -0.009    -0.025                 0.123           0.075     0.030
+25-50                    0.021          -0.017    -0.011                 0.104           0.135     0.045
+50-100                   0.024           0.001    -0.021                 0.108           0.081     0.095
+100-200                  0.040           0.021    -0.004                 0.101           0.041     0.168
+200-500                  0.041           0.020    -0.001                 0.100           0.067     0.243
+500-1000                 0.011           0.033    -0.007                 0.024           0.039     0.083
+>1000                   -0.020           0.023    -0.002                 0.440           0.562     0.335
+
+Pacific shelves, melt half, by depth class and month (error)
+month         5      6      7      8      9
+d_bin                                      
+<25 m     0.002 -0.038  0.003  0.002 -0.019
+25-50     0.017 -0.068 -0.010 -0.007  0.004
+50-100    0.005 -0.027  0.013 -0.010  0.057
+100-200   0.010 -0.016  0.030  0.037  0.067
+200-500   0.017 -0.009  0.009  0.042  0.055
+500-1000  0.005 -0.020  0.036  0.084  0.078
+>1000     0.008 -0.012  0.022  0.036  0.068
+
+=== 2. Straight lines, leave-one-year-out RMSE x100 (cell noise dominates; compare within a row)
+                                        constant  log10 depth  sector open share  open share + log10 depth                      best
+half           sector                                                                                                               
+freeze Oct-Apr Greenland                  10.302       10.293             10.308                    10.299               log10 depth
+               Canadian/Baffin/Hudson      5.769        5.768              5.750                     5.749  open share + log10 depth
+               Barents/Kara               13.672       13.666             13.695                    13.691               log10 depth
+               Beaufort                    5.104        5.097              5.176                     5.168               log10 depth
+               Chukchi                     7.829        7.840              7.576                     7.586         sector open share
+               Laptev                      6.070        6.062              6.132                     6.126               log10 depth
+               East Siberian               5.969        5.921              6.011                     5.959               log10 depth
+               Pacific shelves, shared     6.285        6.270              6.240                     6.218  open share + log10 depth
+melt May-Sep   Greenland                  10.917       10.902             10.920                    10.906               log10 depth
+               Canadian/Baffin/Hudson     10.963       10.922             10.951                    10.909  open share + log10 depth
+               Barents/Kara               14.893       14.810             14.891                    14.823               log10 depth
+               Beaufort                   12.365       12.336             12.358                    12.336  open share + log10 depth
+               Chukchi                    11.744       11.736             11.132                    11.128  open share + log10 depth
+               Laptev                     13.737       13.765             13.815                    13.828                  constant
+               East Siberian              10.783       10.720             10.626                    10.599  open share + log10 depth
+               Pacific shelves, shared    11.713       11.644             11.439                    11.413  open share + log10 depth
+
+Pacific shelves, shared line, all four years: err x100 = a + b x log10(depth m)
+  freeze Oct-Apr  a -1.61  b +0.53  (at 30 m -0.83, at 1000 m -0.02)
+  melt May-Sep    a -3.19  b +1.65  (at 30 m -0.75, at 1000 m +1.76)

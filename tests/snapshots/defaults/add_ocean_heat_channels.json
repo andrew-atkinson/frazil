@@ -1,0 +1,7 @@
+{
+ "aux": "data/auxiliary/ds_auxiliary.nc",
+ "datacube_dir": "data/train_data/monthly_datacube_sicqmw9",
+ "heat_dir": "data/train_data/nextsim_ocean_heat",
+ "out_dir": "data/train_data/monthly_datacube_sicqmw9_ohc",
+ "selfcheck": false
+}

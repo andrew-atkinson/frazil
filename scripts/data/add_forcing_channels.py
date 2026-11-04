@@ -82,22 +82,14 @@ def regridder(valid, lon1d, lat1d, tgt_lon, tgt_lat):
     return np.flatnonzero(valid)[sub]
 
 
-def append_channels(cube, extra):
-    """cube: (time, var_names, y, x) DataArray; extra: {name: (time, y, x)}."""
-    add = xr.DataArray(np.stack([extra[v] for v in extra], axis=1),
-                       dims=cube.dims,
-                       coords={**{k: v for k, v in cube.coords.items() if k != "var_names"},
-                               "var_names": list(extra)})
-    return xr.concat([cube, add], dim="var_names")
-
-
 def _selfcheck():
     t = pd.date_range("2000-01-15", periods=2, freq="MS")
     cube = xr.DataArray(np.zeros((2, 2, 3, 3), np.float32), dims=("time", "var_names", "y", "x"),
                         coords={"time": t, "var_names": ["a", "b"]}, name="datacube")
-    out = append_channels(cube, {"sst": np.ones((2, 3, 3)), "ssrd": 2 * np.ones((2, 3, 3))})
+    out = P.append_channels(cube, {"sst": np.ones((2, 3, 3)), "ssrd": 2 * np.ones((2, 3, 3))})
     assert list(out.var_names.values) == ["a", "b", "sst", "ssrd"]
     assert float(out.sel(var_names="ssrd").sum()) == 36.0
+    assert list(P.append_channels(cube, {"ohc_20_100": np.ones((2, 3, 3))}).var_names.values)[-1] == "ohc_20_100"
     lon, lat = np.array([0.0, 1.0]), np.array([80.0, 81.0])
     field = np.array([[np.nan, 5.0], [7.0, np.nan]])        # NaN = land
     idx = regridder(np.isfinite(field), lon, lat, np.array([[0.0]]), np.array([[80.0]]))
@@ -182,7 +174,7 @@ def main(argv=None):
         if os.path.exists(dst) and not args.overwrite:
             print(f"  exists {os.path.basename(dst)} (skip; --overwrite to rebuild)")
             continue
-        new = append_channels(cube, extra).rename("datacube")
+        new = P.append_channels(cube, extra).rename("datacube")
         new.to_dataset().to_netcdf(dst, encoding={"datacube": {"zlib": True, "complevel": 4}})
         print(f"  {os.path.basename(f)} + {args.vars} -> {dst}")
 

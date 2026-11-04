@@ -8,7 +8,10 @@ thickness sensitivity test: monthly_datacube_sicqmw9_sitra).
      unweighted mean over ocean cells; the target computed the same way), and the
      April-to-September loss, by the summer's lead year (1 = the first summer after the start).
   2. By sector, June-September (the months the drift runs saved as fields):
-     area-mean thickness and extent, and the June-to-September loss.
+     area-mean thickness (ensemble-mean state), and from each member's concentration
+     (averaged over members, as the scorecard does): extent (> 15%), ice area
+     (concentration x cell area) and the extent of loose ice (15-80%). Then the
+     June-to-September thickness loss.
 
 Run from the repo root:  python experiments/2026-10-30_summer_melt/analysis.py
 """
@@ -43,12 +46,16 @@ def target(cube_dir):
     return {v: c.sel(var_names=v).isel(time=np.where(keep)[0]).load().values for v in ("sit", "sic")}, t[keep]
 
 
-def sector_stats(sit, sic):
+def sector_stats(sit, sics):
+    """sit (H, W); sics: list of (H, W) concentration fields (members, or [target])."""
     out = {}
     for s, m in sec.items():
         w = area * m
         out[(s, "sit")] = float((np.nan_to_num(sit) * w).sum() / w.sum())
-        out[(s, "ext")] = float((area * m * (np.nan_to_num(sic) > 0.15)).sum()) / 1e6
+        c = [np.nan_to_num(x) for x in sics]
+        out[(s, "ext")] = np.mean([(w * (x > 0.15)).sum() for x in c]) / 1e6
+        out[(s, "area")] = np.mean([(w * x).sum() for x in c]) / 1e6
+        out[(s, "loose")] = np.mean([(w * (x > 0.15) * (x < 0.8)).sum() for x in c]) / 1e6
     return out
 
 
@@ -70,8 +77,9 @@ for model, cube in MODELS.items():
             if m > 9:
                 continue
             s = xr.open_dataset(f).state
-            st = sector_stats(s.sel(var_names="sit").values.squeeze(), s.sel(var_names="sic").values.squeeze())
-            tg = sector_stats(T["sit"][idx[(y, m)]], T["sic"][idx[(y, m)]])
+            mem = xr.open_dataset(f"{snap}/members_{y}{m:02d}.nc").sic.values
+            st = sector_stats(s.sel(var_names="sit").values.squeeze(), list(mem))
+            tg = sector_stats(T["sit"][idx[(y, m)]], [T["sic"][idx[(y, m)]]])
             for (g, v), x in st.items():
                 reg.append(dict(model=model, start=y0, lead=y - y0, year=y, month=m, sector=g, var=v, frazil=x, target=tg[(g, v)]))
 P, R = pd.DataFrame(pan), pd.DataFrame(reg)
@@ -100,7 +108,7 @@ print(out.rename(index={4: "4+"}, level=1).to_string())
 
 print("\n=== 2. By sector, June-September, all summers (lead >= 1): Frazil minus target")
 R["diff"] = R.frazil - R.target
-for v, unit in (("sit", "m, area mean"), ("ext", "M km^2 extent")):
+for v, unit in (("sit", "m, area mean"), ("ext", "M km^2, extent > 15%"), ("area", "M km^2, ice area"), ("loose", "M km^2, extent of 15-80% ice")):
     print(f"\n{v} ({unit})")
     print(R[(R["var"] == v) & (R.lead >= 1)].pivot_table(index=["model", "sector"], columns="month", values="diff", sort=False).round(3).to_string())
 print("\nJune-to-September thickness loss (m): Frazil / target / ratio")
@@ -108,3 +116,11 @@ J = R[(R["var"] == "sit") & (R.lead >= 1)].pivot_table(index=["model", "sector",
 loss = pd.DataFrame({"frazil": J[("frazil", 6)] - J[("frazil", 9)], "target": J[("target", 6)] - J[("target", 9)]})
 o = loss.groupby(["model", "sector"], sort=False).mean(); o["ratio"] = o.frazil / o.target
 print(o.round(3).to_string())
+
+print("\nAugust-September, Pacific shelves (East Siberian + Chukchi + Beaufort): Frazil minus target by lead year")
+sh = R[R.sector.isin(["East Siberian", "Chukchi", "Beaufort"]) & R.month.isin([8, 9]) & (R.lead >= 1)].copy()
+sh["lead"] = sh.lead.clip(upper=4)
+G = sh.groupby(["model", "lead", "var", "start", "year", "month"])["diff"].sum().groupby(["model", "lead", "var"]).mean().unstack("var")
+G["sit"] /= 3                                   # summed over three sectors -> mean of the three
+G["n"] = sh[sh["var"] == "ext"].groupby(["model", "lead"]).size() / 6
+print(G[["ext", "area", "loose", "sit", "n"]].rename(index={4: "4+"}, level=1).round(3).to_string())
