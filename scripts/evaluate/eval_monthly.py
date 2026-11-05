@@ -17,6 +17,7 @@ from its own seed, so a resumed run gives exactly the uninterrupted result.
 --save-fields DIR also writes each prediction to DIR/pred_YYYYMM.nc (named by the
 predicted month): the ensemble-mean state and every member's sic, for analyses of
 where the one-month step goes wrong (experiments/2026-10-30_summer_melt/one_month.py).
+--months 7 8 scores only those predicted months, each with the seed it has in a full run.
 
 Run:  python scripts/evaluate/eval_monthly.py --ckpt data/models/monthly/last-v3.ckpt
 """
@@ -44,7 +45,7 @@ from frazil import paths
 
 
 def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, state_file=None, seed=42,
-               save_dir=None):
+               save_dir=None, months=None):
     """One-month-ahead RMSE over ocean per state var. Returns {var: (rmse_model,
     rmse_persistence)}. With n_ens>1, the model is a generative ensemble -- draw
     n_ens members (the batch dim) and use the ensemble MEAN, which cancels
@@ -76,6 +77,8 @@ def eval_skill(model, cube, aux, device, max_pairs=0, progress=True, n_ens=1, st
         se_model, se_pers, count, start = st["se_model"], st["se_pers"], st["count"], st["next_t"]
         print(f"[resume] {start}/{n} month pairs already done ({state_file})")
     for t in range(start, n):
+        if months and int(cube.time.dt.month.values[t + 1]) not in months:
+            continue
         torch.manual_seed(seed + t)  # per-pair seed: resuming reproduces the uninterrupted run
         states = rep(torch.as_tensor(arr(t, STATES)[None], device=device, dtype=torch.float32))
         forc = np.stack([arr(t, model.forcing_names), arr(t + 1, model.forcing_names)])  # (2,F,H,W)
@@ -126,6 +129,7 @@ def main(argv=None):
     ap.add_argument("--max-pairs", type=int, default=0, help="0 = all val pairs")
     ap.add_argument("--n-ens", type=int, default=1, help="ensemble members (mean)")
     ap.add_argument("--save-fields", default=None, metavar="DIR", help="also save each prediction to DIR/pred_YYYYMM.nc")
+    ap.add_argument("--months", type=int, nargs="+", default=None, help="only these predicted months (1-12)")
     ap.add_argument("--note", default="", help="annotation stored with the logged result")
     ap.add_argument("--no-log", action="store_true", help="don't append to the results ledger")
     args = ap.parse_args(argv)
@@ -139,10 +143,10 @@ def main(argv=None):
     aux = xr.open_dataset(args.aux)
     print(f"[data] {cube.sizes['time']} val months  (n_ens={args.n_ens})")
     key = json.dumps([os.path.abspath(ckpt), os.path.getmtime(ckpt), os.path.abspath(args.datacube),
-                      args.val_start_year, args.max_pairs, args.n_ens, args.save_fields])
+                      args.val_start_year, args.max_pairs, args.n_ens, args.save_fields, args.months])
     state_file = os.path.join(os.path.dirname(ckpt), f"eval_monthly_progress_{hashlib.sha1(key.encode()).hexdigest()[:10]}.json")
     rmse = eval_skill(model, cube, aux, device, args.max_pairs, n_ens=args.n_ens, state_file=state_file,
-                      save_dir=args.save_fields)
+                      save_dir=args.save_fields, months=args.months)
 
     print(f"\n\nOne-month-ahead skill (RMSE over ocean, lower is better):\n")
     print(f"  {'var':5s} {'Frazil':>10s} {'persistence':>12s} {'skill':>8s}")

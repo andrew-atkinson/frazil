@@ -1,6 +1,7 @@
 {
  "dry_run": false,
- "out_dir": "data/train_data/nextsim_ocean_heat",
+ "full_domain": false,
+ "out_dir": null,
  "selfcheck": false,
  "years": "1995-2018"
 }

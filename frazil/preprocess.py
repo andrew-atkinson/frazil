@@ -209,12 +209,12 @@ def layer_weights(bounds, top, bottom):
     return np.clip(np.minimum(bounds[:, 1], bottom) - np.maximum(bounds[:, 0], top), 0, None)
 
 
-def heat_content(temp, bounds, zero_is_land=True):
+def heat_content(temp, bounds, zero_is_land=True, layers=LAYERS):
     """temp (levels, y, x) in C, missing (and 0.0 in NEMO output) = no water -> {layer: (y, x) MJ m^-2}."""
     t = np.where(np.isfinite(temp) & ((temp != 0.0) | (not zero_is_land)), temp, np.nan)
     excess = np.nan_to_num(np.clip(t - T_FREEZE, 0, None))
     return {name: (OCEAN_RHO_CP * np.tensordot(layer_weights(bounds, a, b), excess, axes=(0, 0)) / 1e6).astype(np.float32)
-            for name, (a, b) in LAYERS.items()}
+            for name, (a, b) in layers.items()}
 
 
 def level_bounds(depth):

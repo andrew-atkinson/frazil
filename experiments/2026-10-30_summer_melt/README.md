@@ -219,4 +219,68 @@ Paired against v0.4.0 on 2015–18, same targets, same seed.
 **What this can't settle:**
 - **One pair of trainings.** All four years come from the same two models, so four-for-four says nothing about how much a retraining alone would move September. Sectors outside the box barely moved, which helps, but their errors are small to begin with, so they're a weak control.
 - **The channels may be underused.** They started from zero and moved as far as the atmospheric channels did in this training (0.14–0.29 against 0.18–0.38), but that leaves them under a tenth of the atmospheric channels' size (2.3–5.5). September went from +0.201 at step 12,744 to +0.167 at step 20,000, so it may not have finished learning.
-- **Next test:** run this trained model on July–October 2015–18 with the heat replaced by its 1995–2014 monthly climatology, no retraining. If the September gain goes, it comes from each year's actual heat; if it stays, from the seasonal pattern or the training path.
+- **Next test:** the climatology run below.
+
+### Climatology test: the September gain isn't from each year's heat (`make_clim_cube.py`, `compare_clim.py`, `compare_clim_output.txt`)
+The same trained model on July–October 2015–18, with the heat replaced by its 1995–2014 monthly climatology (ledger `645c393ec8bf`). Same weights and the same per-month seeds: a re-run of August 2015 with real heat matched the saved prediction exactly, so real minus climatology is only the heat.
+
+| Pacific shelves, extent error, M km² | v0.4.0 | climatological heat | real heat |
+| --- | --- | --- | --- |
+| July | −0.061 | −0.071 | −0.081 |
+| August | +0.223 | +0.198 | +0.209 |
+| September | +0.228 | +0.176 | +0.167 |
+| October | −0.225 | −0.236 | −0.237 |
+
+- **Most of the September gain survives without the year's heat.** Of the 0.061 gain, 0.052 is there with climatology and only 0.009 comes from the year's actual heat. By year, real minus climatology is −0.010, −0.024, −0.019, +0.018. In August real heat is worse than climatology (+0.209 against +0.198). The September depth pattern is the same: at 500–1000 m +0.101, +0.078, +0.078.
+- **The model did learn a response, the physical way round.** Warmer than usual means less ice, steadily: at 0–20 m in September −0.03 for an anomaly over 30 MJ m⁻², +0.016 under −100; r −0.68 between the anomaly and the change in concentration. It improves the pattern slightly, Pacific-shelf concentration RMSE about 1% better than climatology in August–October (September 0.1541 against 0.1555) and 0.3% in July.
+- **It doesn't fix the bias because the anomalies average out.** They are small and of both signs (September mean −3 MJ m⁻² at 0–20 m, +17 at 20–100 m), so a response of this size moves individual cells, not the shelf-wide excess.
+- **Still unattributed:** the 0.052 is either the heat's seasonal pattern or the difference between two trainings; this test can't separate them, and they matter very differently. The v0.4.0 recipe retrained with another seed would measure the second (about 7 hours plus 40 minutes). The box edge is present in both real and climatology runs.
+
+## Conclusion: ocean heat
+The year's actual upper-ocean heat in the box isn't what's missing for the Pacific-shelf excess. The model uses it sensibly and gains about 1% in cell RMSE, but it leaves the August and September bias almost where it was. This covers the top 100 m inside the box, with channels that started from zero; it withdraws the earlier reading that the error mainly reflects a missing ocean input.
+
+## Full-domain heat: what the download involves
+- **Source:** the same SASIP THREDDS run as `nextsim_ocean_heat.py`, `OPA-neXtSIM_CREG025-ILBOXE140_yYYYYmMM.1m_gridT.nc`, `votemper`, streamed for 288 months. The files hold only 3-D temperature, salinity and density on 75 levels, so there's no ready-made heat field to take instead.
+- **Grid:** the model's 127,152 ocean cells are an exact subset of the simulation's (603 × 528), so no regridding. The window that covers them is 511 × 490.
+- **Size:** streamed for the window; only the heat is kept (about 0.3–0.5 GB, plus about 2.3 GB for the rebuilt cubes and zarrs; 37 GB free). Time at the 0.9 MB/s of one small test read, which turned out about 6 times too slow (see below):
+
+| to depth | levels | streamed | time |
+| --- | --- | --- | --- |
+| 100 m | 24 | 6.9 GB | 2.1 h |
+| 300 m | 35 | 10.1 GB | 3.1 h |
+| 500 m | 40 | 11.5 GB | 3.6 h |
+| 1000 m | 47 | 13.6 GB | 4.2 h |
+
+- **What it could answer:** the Atlantic side, untested so far. Share of v0.4.0's squared concentration error, all months 2015–18 (share of area): Barents/Kara 26% (12%), Canadian/Baffin/Hudson 21% (14%), Greenland 16% (53%), against 27% (16%) for the three Pacific shelves. Barents/Kara has the highest RMSE (0.102), but extent bias there is small except June (+0.11), so any gain would show in the pattern more than the bias.
+- **What it can't answer:** the Pacific August error, whose sectors already had full coverage. And it can't ship: the simulation ends in 2018, so no 2019–25 hindcasts.
+- **Needs care:** normalising over the whole domain would squeeze the ice-covered signal. From August 2015 surface temperature (proxy for 0–20 m heat, assuming a uniform layer): mean about 1190 MJ m⁻² at 43–55° N, 810 at 55–64° N, 460 at 64–75° N, 110 north of 75° N; the standard deviation is 2.2 times the box's. Use per-cell anomalies or stats from the ice-affected cells. Keep the one-month lag.
+- **Gate before training:** once downloaded, check whether v0.4.0's Atlantic-side errors follow the heat anomalies at all (no training, conditioned on the heat, an input, as in `compare_ohc.py` section 6). Train only if they do.
+
+## Atlantic-side heat: streamed, and the gate says don't train
+**Stream:** `nextsim_ocean_heat.py --full-domain`, 288 months, 10.1 GB through the connection in 29 minutes, 346 MB kept (`data/train_data/nextsim_ocean_heat_full/`): 0–20, 20–100 and 100–300 m for all 127,152 model ocean cells. Each ocean cell matches one native cell with no latitude offset. Where the new files overlap the old box files (85,151 cells, 288 months), both shared layers are identical (largest difference 0.0). 29,603 cells have no heat at 100–300 m in any month and 7,517 none at 20–100 m; I read that as water too shallow, without checking it against depth.
+
+**Gate (`atlantic_heat_gate.py`, output in `atlantic_heat_gate_output.txt`):** no training. It learns a lookup table of v0.4.0's error on three years of 2015–18 and applies it to the fourth, in turn, first with no heat (month × starting concentration × predicted concentration) and then with heat added. Heat is from the start month, as the lagged channel would give it. The controls use another year's heat for the same month. The decision rule was written before the run: train only if Barents/Kara or Canadian/Baffin/Hudson show an anomaly gain above the controls, in at least 3 of 4 held-out years, and larger than the Pacific's.
+
+The first tables were split too finely: every version came out worse than no heat, controls included (Barents/Kara all three layers +5.6%, control +5.2%). I then added a coarser version (heat effect by season × bin only) with three controls, keeping the same rule. That choice came after seeing the first result.
+
+| % change in RMSE, out of sample, all months (negative = better) | year's heat | another year's heat (3 controls) | years better (of 4) |
+| --- | --- | --- | --- |
+| Barents/Kara, 0–20 m | −0.135 | −0.014, −0.006, +0.074 | 4 |
+| Barents/Kara, 20–100 m | −0.099 | −0.015, −0.060, −0.133 | 4 |
+| Barents/Kara, 100–300 m | −0.010 | −0.054, −0.093, −0.079 | 1 |
+| Barents/Kara, all three | −0.209 | −0.073, −0.102, +0.070 | 4 |
+| Canadian/Baffin/Hudson, 0–20 m | −0.059 | −0.014, +0.022, −0.079 | 3 |
+| Canadian/Baffin/Hudson, 20–100 m | −0.105 | −0.054, +0.041, −0.064 | 4 |
+| Canadian/Baffin/Hudson, 100–300 m | −0.017 | −0.030, −0.020, −0.029 | 4 |
+| Canadian/Baffin/Hudson, all three | −0.090 | +0.014, +0.115, −0.014 | 4 |
+| Greenland, all three | −0.025 | +0.123, +0.335, +0.242 | 3 |
+| Pacific shelves, 0–20 m | −0.237 | −0.025, +0.004, −0.018 | 3 |
+| Pacific shelves, all three | −0.046 | +0.000, +0.205, +0.040 | 3 |
+
+**Reading:**
+- **Possibly real, but very small.** Barents/Kara (0–20 m and all three layers) and Canadian (20–100 m and all three) beat every control on the four-year average and beat no heat in all four years. Against the controls year by year it's less clean: Barents/Kara all three loses to one control in 2018. The best gain is 0.21%.
+- **Not larger than the Pacific.** The Pacific's best on this test is 0.24%, and a real training with heat gained about 1% there (July–October, real against climatology, the same cells, `-0.99%`). The test isn't a forecast of what a training would gain, but it gives no sign the Atlantic side holds more. One like-for-like comparison does pass the rule (all three layers: Barents/Kara −0.209 against Pacific −0.046). With eight sector and layer tests and a Pacific figure that varies this much by layer, I don't count that as a pass; that's a judgment, because the rule didn't say which Pacific number to use.
+- **Direction is mixed in Barents/Kara.** Base-corrected melt-season error at 0–20 m runs from +0.013 in the coolest fifth to −0.016 in the warmest: warmer water goes with too little ice, the opposite of missing heat. At 20–100 m the warmest fifth is +0.011, the expected way, but it isn't monotonic (−0.018 in the middle). At 100–300 m, the deeper layer added for Atlantic Water, Barents/Kara's gain (−0.010) is weaker than all three controls.
+- **Limits.** The table sees only heat in the same cell, as one bin, so it can miss anything a trained model would build from neighbouring cells or from heat with the atmosphere. It's a screen on four years, not proof that heat doesn't matter there. It can't speak to the deeper water below 300 m.
+
+**Decision:** don't train with full-domain heat. The likely payoff is about the Pacific's 1%, in a model that can't ship because the simulation ends in 2018. The data stays on disk if the question comes back.

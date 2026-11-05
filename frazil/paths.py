@@ -11,6 +11,7 @@ AUX = "data/auxiliary/ds_auxiliary.nc"
 TRAIN_DATA = "data/train_data"
 NEXTSIM_RAW = "data/train_data/nextsim_opa_monthly"
 NEXTSIM_OCEAN_HEAT = "data/train_data/nextsim_ocean_heat"   # neXtSIM-OPA upper-ocean heat content, Pacific/Siberian shelves
+NEXTSIM_OCEAN_HEAT_FULL = "data/train_data/nextsim_ocean_heat_full"   # the same, every model ocean cell, to 300 m
 TOPAZ_OCEAN_HEAT = "data/train_data/topaz_ocean_heat"       # TOPAZ4b reanalysis upper-ocean heat, same box, on the model grid
 TOPAZ_DEPTH = "data/auxiliary/topaz_depth.nc"            # seafloor depth from TOPAZ4b wet levels (topaz_depth.py)
 NEXTSIM_REANALYSIS = "data/train_data/nextsim_reanalysis_{var}_monthly.nc"   # Copernicus neXtSIM reanalysis, on the model grid
