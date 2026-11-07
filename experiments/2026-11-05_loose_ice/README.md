@@ -1,6 +1,6 @@
 # Loose ice that opens too slowly
 
-**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (no-training tests done; both hypotheses rejected)
+**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (both hypotheses rejected; the gap is partly-open ice, also on training years; suspect the handling of the 0 bound)
 
 ## Question
 From the target's own state, v0.4.0's August and September shelf ice cover is too high: loose ice opens too slowly and compact ice melts too fast, including on years it trained on ([summer_melt](../2026-10-30_summer_melt/)). Ocean heat isn't the cause. Is this how the model was trained, or how it's sampled?
@@ -44,15 +44,34 @@ No training. August and September 2015–18, 8 members, `step_test.py`, `run_tes
 - **The pushforward pair is indistinguishable**: every class error within 0.007. Both have compact ice melting too fast in August (−0.12 to −0.15). The pair's lineage caveat stands, but the pattern isn't something pushforward adds.
 - **Compact ice melting too fast in August is pan-Arctic.** From the target, >95% ice in August: Barents/Kara −0.116, Laptev −0.096, Canadian −0.060, Greenland −0.044, Pacific −0.119. It covers under 1% of the shelf area in August, so it hardly moves extent. Loose ice opening too slowly is mainly Pacific (and Laptev in September).
 
-**What the error is (`members.py`): the members almost never open loose ice right up.** v0.4.0 from the target, Pacific shelves, by starting concentration:
+**What the error is (`members.py`): too few cells end partly open.** v0.4.0 from the target, Pacific shelves, by starting concentration. "Partly open" means it ends between 0 and 15%. "Open water" means it ends at 0 (≤ 1e-4, see the erratum):
 
-| | target opens below 15% | members do | target goes to 0 | members do | spread / error of the mean |
+| | target partly open | members | target open water | members | spread / error of the mean |
 | --- | --- | --- | --- | --- | --- |
-| August, 15–50% | 90% | 83% | 53% | 40% | 0.084 / 0.101 |
-| August, 50–80% | 29% | 20% | 6.1% | **0.0%** | 0.137 / 0.176 |
-| September, 15–50% | 57% | 44% | 23% | 14% | 0.143 / 0.191 |
-| September, 50–80% | 5.6% | 6.3% | 1.2% | 0.0% | 0.119 / 0.156 |
+| August, 15–50% | 36% | 22% | 54% | 61% | 0.084 / 0.101 |
+| August, 50–80% | 23% | **12%** | 6.1% | 8.6% | 0.137 / 0.176 |
+| September, 15–50% | 34% | 18% | 23% | 25% | 0.143 / 0.191 |
+| September, 50–80% | 4.4% | 3.9% | 1.2% | 2.4% | 0.119 / 0.156 |
 
-- **From 50–80% ice, no member ever reaches open water in one month**, while the target does in 6% of the area in August (Barents/Kara: 7.7% against 0.0%). Below 15%, the members open a third too rarely in August on the Pacific shelves. In Barents/Kara they open as often as the target (31% against 29%) but still never to 0.
-- **The ensemble is too narrow where the error is** (spread under the error of the mean in every loose class), so the missing melt-outs are in the tail the members don't reach, not a shift of the whole distribution.
-- **Reading:** a large one-month drop, loose ice to open water, is something the model doesn't produce. It now looks like how the model represents the step (its loss, and how it handles the 0 bound), not its inputs, sampler or pushforward. This is a description from four summers, not yet a cause.
+- **Erratum (first version of this table):** it said no member ever reaches open water. That was wrong. The sampler clamps each member to the bound, but rounding leaves it about 1e-7 above 0, so the `== 0` test missed every member. With a 1e-4 tolerance, members reach open water a little *more* often than the target.
+- **The gap is the partly-open band.** Members put about half as much area as the target between 0 and 15%. The cells either go to exactly 0 or stay above 15%. Barents/Kara is close to the target in August (`members_output.txt`).
+- **The ensemble is too narrow where the error is.** Its spread is below the error of the mean in every loose class.
+
+## Training years and the 0 bound (`train_years.py`, `train_years_output.txt`)
+
+**The same gap appears on years the model trained on.** v0.4.0, 2011–14, one month from the target (`one_month_fields_2011`), Pacific shelves:
+
+| | target partly open | members | target open water | members |
+| --- | --- | --- | --- | --- |
+| August, 15–50% | 41% | 23% | 49% | 64% |
+| August, 50–80% | 29% | 17% | 5.5% | 9.9% |
+| September, 15–50% | 31% | 19% | 22% | 29% |
+| September, 50–80% | 2.5% | 3.8% | 1.7% | 2.0% |
+
+- **Not rarity in the data.** From 50–80% starting ice in August, 20% of the training targets (1995–2014) end partly open on the Pacific shelves and 28% in Barents/Kara. That is common, not a tail.
+- **Not a generalisation failure.** On training years the members miss the band the same way as in 2015–18. So the model doesn't fit it at all. Barents/Kara fits on training years too.
+- **What the code does at 0:**
+  - **Loss (`gensim/train_module.py:198`).** Where the target is exactly 0, the Gaussian likelihood is replaced by a censored one, `neglogcdf(error)`. That term only penalises a prediction that ends *above* 0. Ending anywhere below 0 costs nothing.
+  - **Sampler (`gensim/sampler.py:72`).** At every step, the predicted endpoint is clamped to the bounds. The decoder clamps again at the end (`gensim/encoder_decoder.py:104`).
+  - **Together:** for cells that might open, the model is free to aim well below 0, and the clamps turn anything below 0 into exactly 0. That would explain both too much open water and too little partly-open ice: mass aimed below 0 drags nearby outcomes down with it. This fits the numbers but is not yet tested.
+- **Next test, no training needed:** rerun `step_test.py` with the sampler's clamp off (`model.sampler.censoring = False`), so only the decoder clamps at the end. Also record how far below the bound the unclamped endpoints aim. If partly-open ice comes back, the clamp is the mechanism. If not, the censored loss is, and fixing it means training.

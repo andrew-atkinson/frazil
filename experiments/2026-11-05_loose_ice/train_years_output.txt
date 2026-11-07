@@ -1,0 +1,35 @@
+=== 1. training targets: share of starting cells that end partly open (0-15%) or at open water
+--- 1995-2014
+                          partly open  open water
+region          m cls                            
+Barents/Kara    8 15-50%        0.399       0.421
+                  50-80%        0.277       0.084
+                9 15-50%        0.323       0.186
+                  50-80%        0.097       0.031
+Pacific shelves 8 15-50%        0.398       0.455
+                  50-80%        0.197       0.048
+                9 15-50%        0.321       0.228
+                  50-80%        0.046       0.021
+--- 2011-2014 only
+                          partly open  open water
+region          m cls                            
+Barents/Kara    8 15-50%        0.321       0.510
+                  50-80%        0.176       0.066
+                9 15-50%        0.221       0.289
+                  50-80%        0.130       0.058
+Pacific shelves 8 15-50%        0.413       0.494
+                  50-80%        0.289       0.055
+                9 15-50%        0.311       0.220
+                  50-80%        0.025       0.017
+
+=== 2. v0.4.0 on its training years 2011-14 (one month from the target), members vs target
+                          target partly open  target open water  members partly open  members open water
+region          m cls                                                                                   
+Barents/Kara    8 15-50%               0.321              0.510                0.309               0.524
+                  50-80%               0.176              0.066                0.196               0.099
+                9 15-50%               0.221              0.289                0.316               0.279
+                  50-80%               0.130              0.058                0.115               0.052
+Pacific shelves 8 15-50%               0.413              0.494                0.234               0.640
+                  50-80%               0.289              0.055                0.172               0.099
+                9 15-50%               0.311              0.220                0.189               0.286
+                  50-80%               0.025              0.017                0.038               0.020

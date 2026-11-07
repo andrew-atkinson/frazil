@@ -32,6 +32,7 @@ sec = sc.sector_masks(aux.longitude.values, ocean)
 regions = {"Pacific shelves": sec["East Siberian"] | sec["Chukchi"] | sec["Beaufort"], "Barents/Kara": sec["Barents/Kara"]}
 cube = xr.open_mfdataset(sorted(glob.glob(os.path.join(paths.TRAIN_DATA, args.datacube, "*_datacube_*.nc"))), combine="by_coords")["datacube"]
 ct = pd.DatetimeIndex(cube.time.values)
+ZERO = 1e-4   # the sampler clamps to the bound but float error leaves ~1e-7, so "== 0" misses every member
 rows = []
 for f in sorted(glob.glob(os.path.join(paths.MODELS, "loose_ice_tests", args.run, "step_??????.npz"))):
     ym = os.path.basename(f)[5:11]; y, m = int(ym[:4]), int(ym[4:])
@@ -41,13 +42,13 @@ for f in sorted(glob.glob(os.path.join(paths.MODELS, "loose_ice_tests", args.run
     for r, mk in regions.items():
         c = mk & (start >= 0.15)
         rows.append(pd.DataFrame({"region": r, "m": m, "w": area[c], "start": start[c], "tgt": tgt[c],
-                                  "p_open": (pred[:, c] < 0.15).mean(0), "p_zero": (pred[:, c] <= 0.0).mean(0),
+                                  "p_open": (pred[:, c] < 0.15).mean(0), "p_zero": (pred[:, c] <= ZERO).mean(0),
                                   "mean": pred[:, c].mean(0), "spread": pred[:, c].std(0, ddof=1)}))
 D = pd.concat(rows, ignore_index=True)
 D["cls"] = pd.cut(D.start, [0.15, 0.5, 0.8, 0.95, 1.0], include_lowest=True, labels=["15-50%", "50-80%", "80-95%", ">95%"])
 f = lambda g: pd.Series({
     "target open <15%": np.average(g.tgt < 0.15, weights=g.w), "members open": np.average(g.p_open, weights=g.w),
-    "target at 0": np.average(g.tgt <= 0, weights=g.w), "members at 0": np.average(g.p_zero, weights=g.w),
+    "target at 0": np.average(g.tgt <= ZERO, weights=g.w), "members at 0": np.average(g.p_zero, weights=g.w),
     "bias": np.average(g["mean"] - g.tgt, weights=g.w),
     "RMSE of mean": np.sqrt(np.average((g["mean"] - g.tgt) ** 2, weights=g.w)), "spread": np.sqrt(np.average(g.spread ** 2, weights=g.w)),
     "area share": g.w.sum()})
