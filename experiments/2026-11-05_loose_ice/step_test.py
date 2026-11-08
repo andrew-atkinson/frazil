@@ -4,6 +4,8 @@ Saves, per predicted month, each member's starting and predicted concentration, 
   --start generated  from the model's own prediction of the previous month, each member from
                      its own start: the condition 80% of the fine-tune trained on
   --n-steps N        sampler steps (trained models use 20)
+  --no-clamp         the sampler doesn't clamp to the bounds at each step; also saves the decoder's
+                     unclamped output (next_raw) to see how far below 0 the members aim
 Each pair draws from eval_monthly's seed (42 + index), so --start truth with 20 steps
 reproduces its saved predictions. Resumable: finished months are skipped.
 
@@ -33,12 +35,16 @@ ap.add_argument("--months", type=int, nargs="+", default=[8, 9])
 ap.add_argument("--val-start-year", type=int, default=2015)
 ap.add_argument("--last-year", type=int, default=2018)
 ap.add_argument("--n-ens", type=int, default=8)
+ap.add_argument("--no-clamp", action="store_true")
 args = ap.parse_args()
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 model = load_model(args.ckpt, paths.CONFIG_FORECAST, device, paths.CONFIG_TRAIN)
 if args.n_steps != model.sampler.n_steps:
     model.sampler.n_steps, model.sampler.schedule = args.n_steps, get_schedule(args.n_steps, 3, 0.5)   # as config_forecast_monthly
+if args.no_clamp:   # sampler unbounded; decoder bounds off too, we clamp sic ourselves below
+    model.sampler.censoring = False
+    model.decoder.lower_bound.fill_(-float("inf")); model.decoder.upper_bound.fill_(float("inf"))
 cube = load_val_cube(args.datacube, args.val_start_year)
 aux = xr.open_dataset(paths.AUX)
 os.makedirs(args.out, exist_ok=True)
@@ -71,6 +77,8 @@ for t in range(cube.sizes["time"] - 1):
     else:
         start = step(rep(tensor(arr(t - 1, STATES)[None])), t - 1)
     next_ = step(start, t)
-    np.savez_compressed(dst + ".part.npz", start=start[:, SIC].cpu().numpy().astype(np.float32), next=next_[:, SIC].cpu().numpy().astype(np.float32))
+    raw = next_[:, SIC].cpu().numpy().astype(np.float32)
+    extra = {"next_raw": raw} if args.no_clamp else {}
+    np.savez_compressed(dst + ".part.npz", start=start[:, SIC].cpu().numpy().astype(np.float32), next=np.clip(raw, 0, 1), **extra)
     os.replace(dst + ".part.npz", dst)
     print(f"  {y}-{m:02d} -> {dst}", flush=True)

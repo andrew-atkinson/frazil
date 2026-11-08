@@ -1,6 +1,6 @@
 # Loose ice that opens too slowly
 
-**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (both hypotheses rejected; the gap is partly-open ice, also on training years; suspect the handling of the 0 bound)
+**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (both hypotheses rejected; the gap is partly-open ice, also on training years; sampler clamp ruled out; suspect the censored loss at 0)
 
 ## Question
 From the target's own state, v0.4.0's August and September shelf ice cover is too high: loose ice opens too slowly and compact ice melts too fast, including on years it trained on ([summer_melt](../2026-10-30_summer_melt/)). Ocean heat isn't the cause. Is this how the model was trained, or how it's sampled?
@@ -74,4 +74,18 @@ No training. August and September 2015–18, 8 members, `step_test.py`, `run_tes
   - **Loss (`gensim/train_module.py:198`).** Where the target is exactly 0, the Gaussian likelihood is replaced by a censored one, `neglogcdf(error)`. That term only penalises a prediction that ends *above* 0. Ending anywhere below 0 costs nothing.
   - **Sampler (`gensim/sampler.py:72`).** At every step, the predicted endpoint is clamped to the bounds. The decoder clamps again at the end (`gensim/encoder_decoder.py:104`).
   - **Together:** for cells that might open, the model is free to aim well below 0, and the clamps turn anything below 0 into exactly 0. That would explain both too much open water and too little partly-open ice: mass aimed below 0 drags nearby outcomes down with it. This fits the numbers but is not yet tested.
-- **Next test, no training needed:** rerun `step_test.py` with the sampler's clamp off (`model.sampler.censoring = False`), so only the decoder clamps at the end. Also record how far below the bound the unclamped endpoints aim. If partly-open ice comes back, the clamp is the mechanism. If not, the censored loss is, and fixing it means training.
+- **Planned next test, no training needed:** rerun `step_test.py` with the sampler's clamp off, and record how far below 0 the unclamped members aim. If partly-open ice comes back, the clamp is the mechanism. If not, the loss is left as the suspect, and testing that needs training.
+
+## Sampler clamp off (`step_test.py --no-clamp`, `members_noclamp_output.txt`, `aim.py`, `aim_output.txt`)
+
+**The sampler's clamp is not the cause.** Same members and seeds, but the sampler doesn't clamp at each step. The decoder output is clamped to [0, 1] only at the end. Pacific shelves, 2015–18:
+
+| | target partly open | clamped | clamp off | target open water | clamped | clamp off |
+| --- | --- | --- | --- | --- | --- | --- |
+| August, 15–50% | 36% | 22% | 17% | 54% | 61% | 66% |
+| August, 50–80% | 23% | 12% | 10% | 6.1% | 8.6% | 9.3% |
+| September, 15–50% | 34% | 18% | 13% | 23% | 25% | 29% |
+
+- **Partly open ice doesn't come back.** It falls slightly further, and slightly more ends at 0. Bias and error of the mean move by 0.006 at most.
+- **The members aim below 0, not just at it.** Unclamped, the members that go below 0 have a median of −0.07 to −0.14 sic. A tenth of them go below −0.12 to −0.21, and the lowest reaches −0.40 (`aim_output.txt`). On the Pacific shelves in August, starting from 50–80%, 9.4% of members aim below 0, against 6.1% of targets at 0. Barents/Kara behaves the same way.
+- **Reading:** this fits the censored loss. Where a training target is exactly 0, ending anywhere below 0 costs nothing, so the model has learned to put outcomes there that should be partly open. It is still not proven. Training without censoring at 0 is the test that would show it.
