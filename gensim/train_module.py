@@ -44,6 +44,7 @@ class GenSIMTrainModule(pl.LightningModule):
             overlap_size: Tuple[int, int] = (8, 8),
             train_with_overlap: bool = True,
             censoring: bool = True,
+            censor_lower: Optional[Tuple[bool, ...]] = None,
             optimize_scale: bool = True,
             epsilon: float = 1E-5,
             patch_generator: Optional[OmegaConf] = None,
@@ -85,6 +86,13 @@ class GenSIMTrainModule(pl.LightningModule):
             slice(overlap_size[1], -overlap_size[1]),
         )
         self.censoring = censoring
+        # Per state variable: censor at the lower bound (None = all, as before). Off for a
+        # variable = a target at its lower bound is scored with the plain Gaussian, like any value.
+        n_vars = len(decoder.lower_bound)
+        self.register_buffer("censor_lower", torch.tensor(
+            [True] * n_vars if censor_lower is None else list(censor_lower)
+        ).view(-1, 1, 1), persistent=False)
+        assert len(self.censor_lower) == n_vars, "censor_lower needs one entry per state variable"
 
         # Training parameters
         self.ema_rate = ema_rate
@@ -198,7 +206,8 @@ class GenSIMTrainModule(pl.LightningModule):
         if self.censoring:
             # Add censoring at lower bound
             loss = torch.where(
-                torch.eq(batch["states"][:, -1], self.decoder.lower_bound),
+                torch.eq(batch["states"][:, -1], self.decoder.lower_bound)
+                & self.censor_lower,
                 neglogcdf(error),
                 loss
             )

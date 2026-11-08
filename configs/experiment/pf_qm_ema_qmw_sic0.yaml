@@ -1,0 +1,22 @@
+# @package _global_
+# DIAGNOSTIC, not a release candidate (experiments/2026-11-05_loose_ice): is the missing
+# partly-open ice (0-15%) caused by the censored loss at sic = 0? Where a target is exactly 0,
+# the loss only penalises a prediction above 0, so the model can aim below 0 for free (members
+# aim down to -0.4). Exactly pf_qm_ema_qmw (v0.4.0: seeded from monthly_pf_qm, 20k steps, EMA
+# 0.999, seed 1, 9-year windowed QM concentration), but a concentration target of 0 is scored
+# with the plain Gaussian like any other value. Every other bound (thickness, damage and snow
+# at 0, concentration and damage at 1) stays censored; the sampler still clamps.
+# A/B partners: monthly_pf_qm_ema_qmw (v0.4.0, same seed) and monthly_pf_qm_ema_qmw_nocens.
+#
+# After:   eval_monthly.py --save-fields, then the loose_ice scripts (step_test.py, members.py).
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_qmw_sic0
+defaults:
+  - pf_qm_ema_qmw
+  - _self_
+
+exp_name: monthly_pf_qm_ema_qmw_sic0
+seed: 1
+
+surrogate:
+  censor_lower: [true, false, true, true, true, true]   # sit, SIC, sid, siu, siv, snt

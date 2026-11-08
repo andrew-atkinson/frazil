@@ -1,0 +1,20 @@
+# @package _global_
+# DIAGNOSTIC, not a release candidate (experiments/2026-11-05_loose_ice): the blunt version of
+# pf_qm_ema_qmw_sic0. Exactly pf_qm_ema_qmw (v0.4.0: seeded from monthly_pf_qm, 20k steps, EMA
+# 0.999, seed 1), with censoring off everywhere: every target at a bound (0 or 1, every variable)
+# is scored with the plain Gaussian. In training only, this also stops the pushforward sampler
+# clamping. The inference sampler (config_forecast_monthly) still clamps.
+# A/B partners: monthly_pf_qm_ema_qmw (v0.4.0, same seed) and monthly_pf_qm_ema_qmw_sic0.
+#
+# After:   eval_monthly.py --save-fields, then the loose_ice scripts (step_test.py, members.py).
+# RESUMABLE: re-run the same command; it auto-continues from last.ckpt.
+# Run:  python train.py +experiment=pf_qm_ema_qmw_nocens
+defaults:
+  - pf_qm_ema_qmw
+  - _self_
+
+exp_name: monthly_pf_qm_ema_qmw_nocens
+seed: 1
+
+surrogate:
+  censoring: false
