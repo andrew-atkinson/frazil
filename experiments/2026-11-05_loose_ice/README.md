@@ -1,6 +1,6 @@
 # Loose ice that opens too slowly
 
-**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (both hypotheses rejected; the gap is partly-open ice, also on training years; sampler clamp ruled out; suspect the censored loss at 0)
+**Date:** 2026-11-05 · **Branch:** `exp/loose-ice` · **Status:** in progress (both hypotheses rejected; the gap is partly-open ice, also on training years; sampler clamp and censoring at 0 ruled out; next leads in the assumptions review)
 
 ## Question
 From the target's own state, v0.4.0's August and September shelf ice cover is too high: loose ice opens too slowly and compact ice melts too fast, including on years it trained on ([summer_melt](../2026-10-30_summer_melt/)). Ocean heat isn't the cause. Is this how the model was trained, or how it's sampled?
@@ -89,3 +89,28 @@ No training. August and September 2015–18, 8 members, `step_test.py`, `run_tes
 - **Partly open ice doesn't come back.** It falls slightly further, and slightly more ends at 0. Bias and error of the mean move by 0.006 at most.
 - **The members aim below 0, not just at it.** Unclamped, the members that go below 0 have a median of −0.07 to −0.14 sic. A tenth of them go below −0.12 to −0.21, and the lowest reaches −0.40 (`aim_output.txt`). On the Pacific shelves in August, starting from 50–80%, 9.4% of members aim below 0, against 6.1% of targets at 0. Barents/Kara behaves the same way.
 - **Reading:** this fits the censored loss. Where a training target is exactly 0, ending anywhere below 0 costs nothing, so the model has learned to put outcomes there that should be partly open. It is still not proven. Training without censoring at 0 is the test that would show it.
+
+## Training without censoring at sic = 0 (`pf_qm_ema_qmw_sic0`; `members_sic0_output.txt`, `train_years_sic0_output.txt`, `extent_fields.py`, `extent_fields_output.txt`)
+
+**The censored loss at 0 isn't the cause either.** v0.4.0's recipe, with sic targets at exactly 0 scored as ordinary values instead of censored. Scored with `eval_monthly --save-fields` on 2015–18 and on the training years 2011–14 (August and September).
+
+It changes where the low end of the members lands, not how much ice opens. Pacific shelves, 2015–18:
+
+| | target partly open | v0.4.0 | sic0 | target at 0 | v0.4.0 | sic0 | target opens (<15%) | v0.4.0 | sic0 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| August, 15–50% | 36% | 22% | 54% | 54% | 61% | 27% | 90% | 83% | 81% |
+| August, 50–80% | 23% | 12% | 16% | 6.1% | 8.6% | 2.9% | 29% | 20% | 19% |
+| September, 15–50% | 34% | 18% | 33% | 23% | 25% | 8.9% | 57% | 44% | 42% |
+
+One-month extent error against the QM target, Pacific shelves, M km²:
+
+| | v0.4.0 | sic0 |
+| --- | --- | --- |
+| August, 2015–18 | +0.22 | +0.28 |
+| September, 2015–18 | +0.23 | +0.27 |
+| August, 2011–14 | +0.13 | +0.16 |
+| September, 2011–14 | +0.07 | +0.09 |
+
+- **Members now stop short of 0 instead of overshooting it.** Too few end at 0 (Pacific August 15–50%: 27% against 54%), and partly open overshoots (54% against 36%). Barents/Kara behaves the same way (at 0 in August from 15–50%: 20% against 48%).
+- **Total opening doesn't improve, and the extent error gets slightly worse.** It is worse in every Pacific row, by 0.02–0.06 M km². That is at the edge of run-to-run noise, but the direction is the same on training and validation years. Whole-domain one-month sic RMSE, 2015–18: 0.0773 → 0.0766, within noise.
+- **Reading:** censoring decided how the members split between 0 and a few percent. It wasn't what held back the opening of 50–80% ice. The members' aim below 0 in the clamp-off test was the loss's free region being used, not the missing opening going there. `pf_qm_ema_qmw_nocens` (no censoring anywhere) isn't worth 11 hours: upper-bound and other-variable censoring has no plausible link to opening. Next leads are in [the assumptions review](../2026-11-14_assumptions_review/): augmentation (ISS-029) and QM-inconsistent targets (ISS-030).

@@ -1,0 +1,10 @@
+[np.str_('sit'), np.str_('sic'), np.str_('sid'), np.str_('siu'), np.str_('siv'), np.str_('snt'), np.str_('tus'), np.str_('huss'), np.str_('uas'), np.str_('vas'), np.str_('rhus'), np.str_('pdd_month'), np.str_('fdd_month'), np.str_('pdd_year'), np.str_('fdd_year')]
+     lon      n  drift turned vs wind (deg, + left)  spread R  speed ratio %
+   0-45E  72197                          -20.500000      0.95           1.97
+  45-90E 163628                          -24.000000      0.89           1.68
+ 90-135E 114855                          -23.700001      0.88           1.55
+135-180E 116965                          -24.799999      0.91           1.48
+180-225E 169106                          -31.299999      0.94           1.49
+225-270E 153473                          -21.200001      0.67           0.26
+270-315E  75692                          -13.300000      0.85           1.83
+315-360E  91895                          -19.600000      0.89           1.96

@@ -8,8 +8,9 @@
 If the members match the target in 2011-14 but not in 2015-18, it is generalisation; if they
 miss the same way on training years, the model cannot fit it.
 
-Run from the repo root:  python experiments/2026-11-05_loose_ice/train_years.py
+Run from the repo root:  python experiments/2026-11-05_loose_ice/train_years.py [--fields DIR]
 """
+import argparse
 import glob
 import importlib.util
 import os
@@ -23,6 +24,10 @@ from frazil import paths
 
 ZERO = 1e-4   # members land ~1e-7 above the bound (sampler clamp + float error)
 MONTHS = (8, 9)
+ap = argparse.ArgumentParser()
+ap.add_argument("--fields", default=os.path.join(paths.MODELS, "monthly_pf_qm_ema_qmw", "one_month_fields_2011"),
+                help="eval_monthly --save-fields dir for 2011-14 (default: v0.4.0)")
+args = ap.parse_args()
 spec = importlib.util.spec_from_file_location("sc", os.path.join(RL.ROOT, "scripts/evaluate/scorecard.py"))
 sc = importlib.util.module_from_spec(spec); spec.loader.exec_module(sc)
 pd.set_option("display.width", 220)
@@ -63,7 +68,7 @@ print("--- 1995-2014"); print(table(T.copy()).round(3).to_string())
 print("--- 2011-2014 only"); print(table(T[T.y >= 2011].copy()).round(3).to_string())
 
 tgt, mem = [], []
-for f in sorted(glob.glob(os.path.join(paths.MODELS, "monthly_pf_qm_ema_qmw", "one_month_fields_2011", "pred_??????.nc"))):
+for f in sorted(glob.glob(os.path.join(args.fields, "pred_??????.nc"))):
     ym = os.path.basename(f)[5:11]; y, m = int(ym[:4]), int(ym[4:])
     if m not in MONTHS:
         continue
@@ -74,5 +79,5 @@ for f in sorted(glob.glob(os.path.join(paths.MODELS, "monthly_pf_qm_ema_qmw", "o
         d = cells(start, end); d["m"] = m; out.append(d)
 M = pd.concat([table(pd.concat(tgt, ignore_index=True)).add_prefix("target "),
                table(pd.concat(mem, ignore_index=True)).add_prefix("members ")], axis=1)
-print("\n=== 2. v0.4.0 on its training years 2011-14 (one month from the target), members vs target")
+print(f"\n=== 2. {args.fields}: training years 2011-14 (one month from the target), members vs target")
 print(M.round(3).to_string())

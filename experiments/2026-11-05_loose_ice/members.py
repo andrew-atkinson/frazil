@@ -6,6 +6,8 @@ Comparing frequencies within a class conditioned on the input is a calibration c
 binning on the truth.
 
 Run from the repo root:  python experiments/2026-11-05_loose_ice/members.py [--run v04_truth]
+    or, from eval_monthly --save-fields (each month from the target's previous month):
+                         python experiments/2026-11-05_loose_ice/members.py --fields DIR
 """
 import argparse
 import glob
@@ -22,6 +24,7 @@ from frazil import paths
 ap = argparse.ArgumentParser()
 ap.add_argument("--run", default="v04_truth")
 ap.add_argument("--datacube", default="monthly_datacube_sicqmw9")
+ap.add_argument("--fields", help="eval_monthly --save-fields dir (pred_YYYYMM.nc), August and September only")
 args = ap.parse_args()
 spec = importlib.util.spec_from_file_location("sc", os.path.join(RL.ROOT, "scripts/evaluate/scorecard.py"))
 sc = importlib.util.module_from_spec(spec); spec.loader.exec_module(sc)
@@ -34,11 +37,17 @@ cube = xr.open_mfdataset(sorted(glob.glob(os.path.join(paths.TRAIN_DATA, args.da
 ct = pd.DatetimeIndex(cube.time.values)
 ZERO = 1e-4   # the sampler clamps to the bound but float error leaves ~1e-7, so "== 0" misses every member
 rows = []
-for f in sorted(glob.glob(os.path.join(paths.MODELS, "loose_ice_tests", args.run, "step_??????.npz"))):
+files = (sorted(f for f in glob.glob(os.path.join(args.fields, "pred_??????.nc")) if f[-5:-3] in ("08", "09"))
+         if args.fields else sorted(glob.glob(os.path.join(paths.MODELS, "loose_ice_tests", args.run, "step_??????.npz"))))
+for f in files:
     ym = os.path.basename(f)[5:11]; y, m = int(ym[:4]), int(ym[4:])
     i = int(np.where((ct.year == y) & (ct.month == m))[0][0])
-    tgt = np.nan_to_num(cube.isel(time=i).sel(var_names="sic").values)
-    d = np.load(f); start, pred = np.nan_to_num(d["start"][0]), np.nan_to_num(d["next"])
+    sic = lambda j: np.nan_to_num(cube.isel(time=j).sel(var_names="sic").values)
+    tgt = sic(i)
+    if args.fields:
+        start, pred = sic(i - 1), np.nan_to_num(xr.open_dataset(f).sic_members.values)
+    else:
+        d = np.load(f); start, pred = np.nan_to_num(d["start"][0]), np.nan_to_num(d["next"])
     for r, mk in regions.items():
         c = mk & (start >= 0.15)
         rows.append(pd.DataFrame({"region": r, "m": m, "w": area[c], "start": start[c], "tgt": tgt[c],
@@ -54,5 +63,5 @@ f = lambda g: pd.Series({
     "area share": g.w.sum()})
 T = D.groupby(["region", "m", "cls"], observed=True).apply(f)
 T["area share"] = T["area share"] / T.groupby(level=["region", "m"])["area share"].transform("sum")
-print(f"=== {args.run}: opening up, by starting concentration (cells starting at 15% or more)")
+print(f"=== {args.fields or args.run}: opening up, by starting concentration (cells starting at 15% or more)")
 print(T.round(3).to_string())

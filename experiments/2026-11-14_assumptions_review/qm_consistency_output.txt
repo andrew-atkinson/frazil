@@ -1,0 +1,12 @@
+sit identical in raw and QM cubes: True
+                raw 0<c<15  QM 0<c<15  NSIDC 0<c<15  raw c=0  QM c=0  NSIDC c=0  QM c=0 but sit>0.1m  QM c<15 & raw c>50  med sit/sic raw (c>15)  med sit/sic QM (c>15)
+region       m                                                                                                                                                         
+Barents/Kara 7       0.104      0.139         0.133    0.440   0.471      0.485                0.024               0.028                   1.961                  2.108
+             8       0.096      0.128         0.124    0.572   0.622      0.629                0.059               0.040                   1.766                  1.622
+             9       0.073      0.099         0.105    0.644   0.685      0.680                0.049               0.041                   1.362                  1.484
+Pacific      7       0.084      0.067         0.069    0.082   0.060      0.056                0.005               0.001                   2.278                  2.250
+             8       0.120      0.151         0.164    0.192   0.175      0.160                0.007               0.009                   1.975                  2.074
+             9       0.089      0.123         0.140    0.287   0.302      0.287                0.023               0.032                   1.568                  1.909
+raw Aug sic 0.05-0.15: median sit 0.10 m, median sit/sic 1.04
+raw Aug sic 0.3-0.5: median sit 0.62 m, median sit/sic 1.57
+raw Aug sic 0.9-1.01: median sit 2.20 m, median sit/sic 2.35
