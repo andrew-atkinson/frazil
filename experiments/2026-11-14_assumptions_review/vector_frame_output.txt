@@ -1,0 +1,25 @@
+=== drift: rank correlation of -div(sic * drift) with the actual change of teacher sic, by how the components are read
+                 Oct-Mar  Apr-Jun  Jul-Sep
+true (u, v)        0.162    0.185    0.208
++90 (-v, u)       -0.003    0.058   -0.067
+180 (-u, -v)      -0.162   -0.185   -0.208
+-90 (v, -u)        0.003   -0.058    0.067
+mirror (u, -v)     0.012   -0.035   -0.003
+mirror (-u, v)    -0.012    0.035    0.003
+mirror (v, u)      0.026   -0.039    0.006
+mirror (-v, -u)   -0.026    0.039   -0.006
+=== wind: rank correlation of -div(sic * wind) with the actual change of teacher sic, by how the components are read
+                 Oct-Mar  Apr-Jun  Jul-Sep
+true (u, v)        0.034    0.175    0.030
++90 (-v, u)       -0.075   -0.026   -0.136
+180 (-u, -v)      -0.034   -0.175   -0.030
+-90 (v, -u)        0.075    0.026    0.136
+mirror (u, -v)    -0.001   -0.050   -0.024
+mirror (-u, v)     0.001    0.050    0.024
+mirror (v, u)      0.037   -0.046    0.011
+mirror (-v, -u)   -0.037    0.046   -0.011
+
+=== true frame, drift: teacher sic against QM sic (same drift in both cubes)
+             Oct-Mar  Apr-Jun  Jul-Sep
+teacher sic    0.162    0.185    0.208
+QM sic         0.066    0.051    0.103
