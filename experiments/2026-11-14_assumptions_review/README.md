@@ -1,6 +1,6 @@
 # Review of data and model assumptions
 
-**Date:** 2026-11-14 · **Branch:** `exp/loose-ice` · **Status:** in progress (review done; ISS-030 shown to shape the loose-ice error; teacher-space test next) · **Issues:** ISS-029, ISS-030
+**Date:** 2026-11-14 · **Branch:** `exp/loose-ice` · **Status:** in progress (ISS-030 shapes the loose-ice error; correcting predictions instead of targets removes most of it one month at a time; in the clean A/B it places the summer ice edge 5–7% better than v0.4.0 but leaves more summer extent, so v0.4.0 stays) · **Issues:** ISS-029, ISS-030
 
 ## Question
 
@@ -71,6 +71,77 @@ In the teacher, thin loose ice opens far more often than thick loose ice. In the
 - **The components do line up with the grid's axes, and a 90° misreading destroys their meaning.** Same transport test with the drift read eight ways: the true reading gives 0.16–0.21, the two 90° readings −0.07 to +0.07, the mirror images within ±0.04. So a rotated training sample shows the network a drift with no usable relation to the ice change, unless it learns to turn the vectors itself from the rotation label.
 - **What that costs the unrotated case the model is run in can't be told from data.** It needs C1 or D1.
 
+## C0 result: correcting the predictions instead of the targets (2026-11-15)
+
+`monthly_pf` is the teacher-trained model that v0.4.0 descends from (v0.4.0 = `monthly_pf` plus 80k more steps on QM targets, in three stages). QM is applied to each member's `sic` after the fact.
+
+**One month at a time, it removes most of the loose-ice error** (`teacher_space.py`). Pacific shelves, against the QM target. "Year left out" refits each map without the target year, so that year's observations can't leak in through the map:
+
+| | v0.4.0 | `monthly_pf` + QM, year left out | the teacher's own target through the same left-out maps |
+| --- | --- | --- | --- |
+| extent error, August 2015–18, M km² | +0.22 | +0.04 | −0.04 |
+| extent error, September 2015–18 | +0.23 | −0.01 | −0.02 |
+| extent error, August 2011–14 | +0.13 | +0.05 | 0.00 |
+| RMSE of the mean `sic`, August 2015–18 | 0.134 | 0.082 | 0.051 |
+| from 50–80% in August 2015–18: ends partly open (target 23%) | 12% | 24% | 26% |
+
+- **The partly-open ice comes back**, and the bias by thickness goes flat (Barents/Kara, August 2015–18, under 1 m: −0.21 → −0.01).
+- **The teacher-space model isn't perfect in its own space.** Against the teacher's target it still leaves +0.21 M km² too much shelf ice in August 2015–18. Most of that is ice just above 15% that the maps then remove.
+- **The last column is the floor set by the maps themselves.** With 8 or 9 values per map it is not small (RMSE 0.05–0.09), which is finding 4 again.
+- Exception: Barents/Kara in September 2015–18, where thin ice melts too fast in teacher space and stays so after mapping (bias −0.11 under 1 m, against v0.4.0's −0.06).
+
+**Free-running and out of sample, it matches v0.4.0 on September and beats it on the ice edge, with two weaknesses** (`teacher_space_hindcast.py`). Hindcast 2019–22 from December 2018 against NSIDC-0051, scored with the scorecard's own functions; maps fitted on 2010–2018 only:
+
+| | `monthly_pf` (teacher targets) | `monthly_pf` + QM of predictions | `monthly_pf_qm` (+40k steps on QM targets) | v0.4.0 (+80k steps) |
+| --- | --- | --- | --- | --- |
+| September bias, M km² | +0.36 | +0.08 | +0.27 | +0.08 |
+| June bias | +0.68 | +0.49 | +0.54 | +0.66 |
+| July bias | +0.68 | +0.41 | +0.34 | +0.29 |
+| August bias | +0.26 | +0.18 | +0.08 | +0.08 |
+| ice-edge error, September | 1.52 | 1.05 | 1.41 | 1.13 |
+| ice-edge error, June | 1.66 | 1.27 | 1.56 | 1.33 |
+| ice-edge error, July–September | 1.92 | 1.32 | 1.76 | 1.38 |
+| ice-edge error, December–March | 0.96 | 0.83 | 0.91 | 0.80 |
+| September year-to-year correlation (4 years) | 0.96 | 0.86 | 0.95 | 0.95 |
+
+- **With no extra training, it places the summer ice edge better than v0.4.0** (5–7% lower error) and far better than the same-age model trained on QM targets (20–25% lower).
+- **Weaknesses:** July and August bias are worse than v0.4.0's, and the September year-to-year correlation drops from 0.96 to 0.86. The maps clip each cell to the range of its 9 fitted years, which flattens unusual years. Four years is a small sample for a correlation.
+- **Not a clean A/B.** `monthly_pf` lacks the EMA fine-tune that took `monthly_pf_qm` to `monthly_pf_qm_ema` (ice-edge error July–September 1.76 → 1.42). The clean test is that same fine-tune on teacher targets.
+
+## C2 result: the clean A/B (2026-11-16)
+
+`monthly_pf_ema` is `monthly_pf` plus the fine-tune that finished v0.4.0's line (recipe `pf_ema`: 20k steps, EMA 0.999, seed 1), on the teacher's own states. Its config differs from v0.4.0's only in the training data, the seed checkpoint and the name. QM is applied to its members afterwards, as in C0.
+
+**One month at a time, the fine-tune changes nothing** (`teacher_space.py`). Pacific shelves, against the QM target, maps with the year left out:
+
+| | v0.4.0 | `monthly_pf` + QM | `monthly_pf_ema` + QM |
+| --- | --- | --- | --- |
+| extent error, August 2015–18, M km² | +0.22 | +0.04 | +0.03 |
+| extent error, September 2015–18 | +0.23 | −0.01 | +0.01 |
+| extent error, August 2011–14 | +0.13 | +0.05 | +0.05 |
+| RMSE of the mean `sic`, August 2015–18 | 0.134 | 0.082 | 0.081 |
+
+In teacher space the shelf excess is also still there: August 2015–18 +0.20 M km² (`monthly_pf` +0.21), September +0.11 (+0.06).
+
+**Free-running, it keeps the ice-edge gain over v0.4.0 but not the September tie** (`teacher_space_hindcast.py`). Hindcast 2019–22 against NSIDC-0051, maps fitted on 2010–2018:
+
+| | v0.4.0 | `monthly_pf` + QM | `monthly_pf_ema` + QM | `monthly_pf_ema`, uncorrected |
+| --- | --- | --- | --- | --- |
+| September bias, M km² | +0.08 | +0.08 | +0.18 | +0.47 |
+| June bias | +0.66 | +0.49 | +0.46 | +0.65 |
+| July bias | +0.29 | +0.41 | +0.46 | +0.67 |
+| August bias | +0.08 | +0.18 | +0.23 | +0.36 |
+| ice-edge error, September | 1.13 | 1.05 | 1.05 | 1.55 |
+| ice-edge error, June | 1.33 | 1.27 | 1.26 | 1.65 |
+| ice-edge error, July–September | 1.38 | 1.32 | 1.30 | 1.91 |
+| ice-edge error, December–March | 0.80 | 0.83 | 0.80 | 0.97 |
+| September year-to-year correlation (4 years) | 0.95 | 0.86 | 0.90 | 0.96 |
+
+- **Against v0.4.0, same fine-tune and seed:** the summer ice edge is 5–7% better and June bias is 0.20 lower. July, August and September carry 0.10–0.17 M km² more ice, which is above the run-to-run noise (0.01 for September, 0.05–0.08 for July and August).
+- **The fine-tune did not do on teacher targets what it did on QM targets.** There it cut the July–September ice-edge error from 1.76 to 1.42. Here the uncorrected model is unchanged on the edge (1.92 → 1.91) and gains September ice (+0.36 → +0.47). So the C0 caveat is settled: the missing fine-tune wasn't holding `monthly_pf` back.
+- **What the correction can't reach is the model's own error against the teacher.** The maps are fitted on the teacher against observations, so they remove the teacher's bias. The summer excess the model has in teacher space passes through them, and free-running it builds up.
+- **Verdict:** not a replacement for v0.4.0. Correcting predictions gives the better edge and brings back the partly-open ice; correcting targets gives the better summer extent. The next question is why a model trained on consistent teacher states still leaves too much shelf ice in August against the teacher itself. That no longer involves the QM targets, so ISS-030 can't be the whole cause.
+
 ## Plan
 
 Cheapest and most decisive first. All of A and B are analysis only, which I run. Every model call in C and D is yours to start; I'll give you the line. Training A/Bs repeat v0.4.0's recipe exactly (seeded from `monthly_pf_qm`, 20k steps, EMA 0.999, seed 1), so v0.4.0 is the comparison for each. Run-to-run noise is about 0.01 M km² on September bias and 0.05–0.08 on July and August.
@@ -86,9 +157,9 @@ Cheapest and most decisive first. All of A and B are analysis only, which I run.
 - B4. **Observational uncertainty.** Score v0.4.0's 2019–22 hindcast against a second product (NSIDC-0079 Bootstrap, or OSI-SAF). Do this for the Pacific shelves in August–September and the Atlantic side in June, to see how much of each gap is inside the spread between products. This needs a download, so I'll ask first with the file names and sizes.
 
 **C. Training A/Bs (about 11 h each, one at a time)**
-- C0. **A first look at C2 without training.** `monthly_pf` is an existing model trained on the teacher's own states. Run it one month at a time on the teacher cube for August and September (2015–18 and 2011–14, about 25 minutes each), saving fields. Then, with no model calls: (a) check whether it opens loose ice by thickness as the teacher does; (b) apply the windowed QM maps to its members and score them against the QM target beside v0.4.0. Not a clean A/B (60k steps, no EMA fine-tune), but it shows whether the loose-ice gap exists in teacher space at all.
+- C0. **Done, see the C0 result above.** A first look at C2 without training. `monthly_pf` is an existing model trained on the teacher's own states. Run it one month at a time on the teacher cube for August and September (2015–18 and 2011–14, about 25 minutes each), saving fields. Then, with no model calls: (a) check whether it opens loose ice by thickness as the teacher does; (b) apply the windowed QM maps to its members and score them against the QM target beside v0.4.0. Not a clean A/B (60k steps, no EMA fine-tune), but it shows whether the loose-ice gap exists in teacher space at all.
 - C1. **Augmentation fixed** (ISS-029). Chain the transforms, and transform the vector components with the fields: flip x negates `u`, flip y negates `v`, and a 90° rotation swaps and negates them. Do this for drift and wind alike. Add a test that rotating a uniform eastward wind gives a uniform wind along the new x axis. If the fix moves the Pacific August error or the partly-open share by more than the noise, the augmentation was costing physics.
-- C2. **Consistent targets** (ISS-030), without a proportional rule. Scaling `sit` by the change in `sic` would be one. Instead, train on the teacher's own, consistent states with the same recipe, and apply the QM to the *predictions*: each member's `sic` after every step, using the windowed maps as now. Two comparisons:
+- C2. **Done, see the C2 result above: mixed, v0.4.0 stays.** **Consistent targets** (ISS-030), without a proportional rule. Scaling `sit` by the change in `sic` would be one. Instead, train on the teacher's own, consistent states with the same recipe, and apply the QM to the *predictions*: each member's `sic` after every step, using the windowed maps as now. Two comparisons:
   - with v0.4.0 on the 2019–22 scorecard;
   - with the QM target on the one-month check.
 
@@ -98,7 +169,7 @@ Cheapest and most decisive first. All of A and B are analysis only, which I run.
 **D. Model-call diagnostic (optional, about 2 h)**
 - D1. Run v0.4.0 one month at a time on inputs rotated 90°, with the rotation label set as in training, then rotate the output back and score it. If the error on the Pacific shelves is clearly larger than unrotated, the "rotated" physics was learned badly. That would make C1 more likely to pay off before spending 11 hours on it.
 
-**Order (revised after findings 7–9):** C0 → C2 if C0 holds → C1 → B4 when you approve the download. B1 and B3 stay open; B2 is done (finding 7). D1 only if C1 needs a cheaper first look.
+**Order (revised after C2):** C1 next, as the same fine-tune on teacher targets seeded from `monthly_pf`, so `monthly_pf_ema` is its A/B partner and the shelf excess in teacher space is the measure → B1, which bears on the same excess → B3 with a look at wider or smoother maps → B4 when you approve the download.
 
 ## Files
 
@@ -107,3 +178,6 @@ Cheapest and most decisive first. All of A and B are analysis only, which I run.
 - `raw_vs_qm.py`, `raw_vs_qm_output.txt`: finding 6.
 - `qm_error_location.py`, `qm_error_location_output.txt`: finding 7.
 - `vector_frame.py`, `vector_frame_output.txt`: findings 8 and 9.
+- `teacher_space.py`, `teacher_space_output.txt`: C0 and C2, one month at a time.
+- `teacher_space_hindcast.py`, `teacher_space_hindcast_output.txt`: C0 and C2, hindcast 2019–22.
+- `configs/experiment/pf_ema.yaml`: the C2 recipe.
